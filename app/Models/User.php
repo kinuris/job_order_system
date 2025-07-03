@@ -12,6 +12,14 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+    
+    /**
+     * Get the technician associated with the user.
+     */
+    public function technician()
+    {
+        return $this->hasOne(Technician::class);
+    }
 
     /**
      * The attributes that are mass assignable.
