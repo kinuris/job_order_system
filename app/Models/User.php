@@ -32,6 +32,20 @@ class User extends Authenticatable
         'password',
     ];
 
+    public function initials(): string
+    {
+        $nameParts = explode(' ', $this->name);
+        $initials = '';
+
+        foreach ($nameParts as $part) {
+            if (isset($part[0])) {
+                $initials .= strtoupper($part[0]);
+            }
+        }
+
+        return $initials;
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
