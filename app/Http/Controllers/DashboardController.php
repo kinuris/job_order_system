@@ -48,7 +48,9 @@ class DashboardController extends Controller
             'total_technicians' => Technician::count(),
         ];
 
+        // Only show job orders from today
         $recent_job_orders = JobOrder::with(['customer', 'technician.user'])
+            ->whereDate('created_at', today())
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -91,9 +93,11 @@ class DashboardController extends Controller
             ]);
         }
 
+        // Only show job orders from today
         $my_job_orders = JobOrder::with(['customer'])
             ->where('technician_id', $technician->id)
             ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereDate('created_at', today())
             ->orderBy('scheduled_at')
             ->get();
 

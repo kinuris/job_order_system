@@ -28,21 +28,10 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('password'),
         ]);
 
-        $tech2 = User::factory()->create([
-            'name' => 'Technician Two',
-            'username' => 'tech2',
-            'password' => bcrypt('password'),
-        ]);
-
         // Create technician profiles for the technician users
         Technician::factory()->create([
             'user_id' => $tech1->id,
             'phone_number' => '555-1234',
-        ]);
-
-        Technician::factory()->create([
-            'user_id' => $tech2->id,
-            'phone_number' => '555-5678',
         ]);
     }
 }

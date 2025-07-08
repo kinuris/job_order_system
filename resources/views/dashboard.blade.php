@@ -94,7 +94,7 @@
             {{-- Recent Activity --}}
             <div class="grid gap-6 md:grid-cols-2">
                 <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Job Orders</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Today's Job Orders</h3>
                     @if($recent_job_orders->count() > 0)
                         <div class="space-y-3">
                             @foreach($recent_job_orders as $job)
@@ -114,7 +114,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-gray-500 dark:text-gray-400">No job orders yet.</p>
+                        <p class="text-gray-500 dark:text-gray-400">No job orders created today.</p>
                     @endif
                 </div>
 
@@ -177,7 +177,7 @@
 
             {{-- My Job Orders --}}
             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">My Assigned Jobs</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Today's Assigned Jobs</h3>
                 @if($my_job_orders->count() > 0)
                     <div class="space-y-3">
                         @foreach($my_job_orders as $job)
@@ -203,7 +203,7 @@
                         @endforeach
                     </div>
                 @else
-                    <p class="text-gray-500 dark:text-gray-400">No assigned jobs at the moment.</p>
+                    <p class="text-gray-500 dark:text-gray-400">No assigned jobs for today.</p>
                 @endif
             </div>
 
