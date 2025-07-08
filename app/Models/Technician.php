@@ -27,4 +27,29 @@ class Technician extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get the job orders assigned to this technician.
+     */
+    public function jobOrders()
+    {
+        return $this->hasMany(JobOrder::class);
+    }
+
+    /**
+     * Get active job orders for this technician.
+     */
+    public function activeJobOrders()
+    {
+        return $this->hasMany(JobOrder::class)
+            ->whereNotIn('status', ['completed', 'cancelled']);
+    }
+
+    /**
+     * Get the technician's full name from the associated user.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return $this->user->name ?? 'Unknown';
+    }
 }

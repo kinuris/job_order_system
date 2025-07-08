@@ -30,6 +30,7 @@ class User extends Authenticatable
         'name',
         'username',
         'password',
+        'role',
     ];
 
     public function initials(): string
@@ -44,6 +45,22 @@ class User extends Authenticatable
         }
 
         return $initials;
+    }
+
+    /**
+     * Check if the user is an admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if the user is a technician.
+     */
+    public function isTechnician(): bool
+    {
+        return $this->role === 'technician';
     }
 
     /**

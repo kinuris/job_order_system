@@ -2,13 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Technician>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Customer>
  */
-class TechnicianFactory extends Factory
+class CustomerFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -18,8 +17,11 @@ class TechnicianFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->create(['role' => 'technician']),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
+            'email' => fake()->unique()->safeEmail(),
             'phone_number' => fake()->phoneNumber(),
+            'service_address' => fake()->address(),
         ];
     }
 }
