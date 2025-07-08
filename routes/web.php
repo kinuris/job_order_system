@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\JobOrderController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TechnicianJobOrderController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -40,6 +41,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->name('job-orders.update-status');
     Route::get('job-orders/status/{status?}', [JobOrderController::class, 'getByStatus'])
         ->name('job-orders.by-status');
+});
+
+// Technician routes (for managing their assigned job orders)
+Route::middleware(['auth'])->prefix('technician')->name('technician.')->group(function () {
+    Route::patch('job-orders/{jobOrder}/status', [TechnicianJobOrderController::class, 'updateStatus'])
+        ->name('job-orders.update-status');
+    Route::patch('job-orders/{jobOrder}/notes', [TechnicianJobOrderController::class, 'updateNotes'])
+        ->name('job-orders.update-notes');
+    Route::patch('job-orders/{jobOrder}/reschedule', [TechnicianJobOrderController::class, 'reschedule'])
+        ->name('job-orders.reschedule');
 });
 
 require __DIR__.'/auth.php';
