@@ -470,9 +470,12 @@
         // Chat functionality
         let currentJobId = null;
         let messagePollingInterval = null;
+        let isInitialLoad = false;
+        let shouldScrollToBottom = false;
 
         function openChatModal(jobId) {
             currentJobId = jobId;
+            isInitialLoad = true; // Set flag for initial load
             document.getElementById('chat-job-id').value = jobId;
             document.getElementById('chat-title').textContent = `Job #${jobId} Chat`;
             
@@ -514,6 +517,8 @@
                 modal.classList.add('hidden');
                 document.getElementById('chat-message').value = '';
                 currentJobId = null;
+                isInitialLoad = false; // Reset the flag
+                shouldScrollToBottom = false; // Reset the flag
                 
                 // Stop polling
                 if (messagePollingInterval) {
@@ -581,11 +586,18 @@
                         `;
                     }).join('');
 
-                    // Scroll to bottom smoothly
-                    messagesContainer.scrollTo({
-                        top: messagesContainer.scrollHeight,
-                        behavior: 'smooth'
-                    });
+                    // Only scroll to bottom on initial load or when sending a new message
+                    if (isInitialLoad || shouldScrollToBottom) {
+                        // Use setTimeout to ensure the content is rendered first
+                        setTimeout(() => {
+                            const messagesContainer = document.getElementById('chat-messages');
+                            if (messagesContainer) {
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }
+                        }, 100);
+                        isInitialLoad = false;
+                        shouldScrollToBottom = false;
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading messages:', error);
@@ -609,6 +621,9 @@
         function sendMessage(message) {
             if (!currentJobId || !message.trim()) return;
 
+            // Set flag to scroll to bottom after sending message
+            shouldScrollToBottom = true;
+
             fetch(`/job-orders/${currentJobId}/messages`, {
                 method: 'POST',
                 headers: {
@@ -624,10 +639,12 @@
                     loadMessages();
                     document.getElementById('chat-message').value = '';
                 } else {
+                    shouldScrollToBottom = false; // Reset flag on error
                     alert('Error sending message: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
+                shouldScrollToBottom = false; // Reset flag on error
                 console.error('Error sending message:', error);
                 alert('Error sending message. Please try again.');
             });
