@@ -90,6 +90,30 @@ class JobOrder extends Model
     }
 
     /**
+     * Get the user assigned to this job order (through technician relationship).
+     */
+    public function assignedUser()
+    {
+        return $this->hasOneThrough(User::class, Technician::class, 'id', 'id', 'technician_id', 'user_id');
+    }
+
+    /**
+     * Get the messages for this job order.
+     */
+    public function messages()
+    {
+        return $this->hasMany(JobOrderMessage::class)->orderBy('created_at', 'asc');
+    }
+
+    /**
+     * Get the unread messages for this job order.
+     */
+    public function unreadMessages()
+    {
+        return $this->hasMany(JobOrderMessage::class)->where('is_read', false);
+    }
+
+    /**
      * Scope a query to only include pending job orders.
      */
     public function scopePending($query)

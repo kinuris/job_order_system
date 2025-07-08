@@ -1,12 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\JobOrderController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TechnicianJobOrderController;
+use App\Http\Controllers\JobOrderMessageController;
+use App\Models\JobOrder;
 
 Route::get('/', function () {
     return view('welcome');
@@ -51,6 +54,14 @@ Route::middleware(['auth'])->prefix('technician')->name('technician.')->group(fu
         ->name('job-orders.update-notes');
     Route::patch('job-orders/{jobOrder}/reschedule', [TechnicianJobOrderController::class, 'reschedule'])
         ->name('job-orders.reschedule');
+});
+
+// Job order messages/chat routes (accessible by admin and assigned technician)
+Route::middleware(['auth'])->prefix('job-orders/{jobOrder}/messages')->name('job-orders.messages.')->group(function () {
+    Route::get('/', [JobOrderMessageController::class, 'index'])->name('index');
+    Route::post('/', [JobOrderMessageController::class, 'store'])->name('store');
+    Route::patch('/mark-read', [JobOrderMessageController::class, 'markAsRead'])->name('mark-read');
+    Route::get('/unread-count', [JobOrderMessageController::class, 'getUnreadCount'])->name('unread-count');
 });
 
 require __DIR__.'/auth.php';
