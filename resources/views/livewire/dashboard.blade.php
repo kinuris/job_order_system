@@ -99,7 +99,16 @@
                         @foreach($recent_job_orders as $job)
                             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                 <div>
-                                    <p class="font-medium text-gray-900 dark:text-gray-100">#{{ $job->id }} - {{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <p class="font-medium text-gray-900 dark:text-gray-100">#{{ $job->id }} - {{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                            @if($job->priority === 'urgent') bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                                            @elseif($job->priority === 'high') bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
+                                            @elseif($job->priority === 'medium') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
+                                            @else bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 @endif">
+                                            {{ ucfirst($job->priority) }}
+                                        </span>
+                                    </div>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ ucfirst(str_replace('_', ' ', $job->status)) }}</p>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -113,13 +122,6 @@
                                             <span class="bg-red-500 text-white rounded-full px-1 text-xs">{{ $this->getUnreadMessageCount($job->id) }}</span>
                                         @endif
                                     </button>
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
-                                        @if($job->priority === 'urgent') bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
-                                        @elseif($job->priority === 'high') bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
-                                        @elseif($job->priority === 'medium') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
-                                        @else bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 @endif">
-                                        {{ ucfirst($job->priority) }}
-                                    </span>
                                 </div>
                             </div>
                         @endforeach
@@ -197,7 +199,16 @@
                             <div class="flex items-center justify-between mb-3">
                                 <div>
                                     <h4 class="font-medium text-gray-900 dark:text-gray-100">Job #{{ $job->id }}</h4>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                            @if($job->priority === 'urgent') bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                                            @elseif($job->priority === 'high') bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
+                                            @elseif($job->priority === 'medium') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
+                                            @else bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 @endif">
+                                            {{ ucfirst($job->priority) }}
+                                        </span>
+                                    </div>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->service_address }}</p>
                                 </div>
                                 <div class="text-right">
@@ -233,7 +244,6 @@
                             <div class="mb-3">
                                 <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Description:</strong> {{ $job->description }}</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Type:</strong> {{ ucfirst($job->type) }}</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Priority:</strong> {{ ucfirst($job->priority) }}</p>
                             </div>
                         </div>
                     @endforeach
