@@ -155,16 +155,9 @@ class Dashboard extends Component
             });
         }
 
-        // If toggle is off, exclude completed jobs (but keep all jobs scheduled for today)
+        // If toggle is off, exclude ALL completed jobs
         if (!$this->showCompletedJobs) {
-            $query->where(function($statusQuery) {
-                $statusQuery->where('status', '!=', 'completed')
-                            ->orWhere(function($todayQuery) {
-                                // But still show completed jobs if they were scheduled for today
-                                $todayQuery->where('status', 'completed')
-                                          ->whereDate('scheduled_at', today());
-                            });
-            });
+            $query->where('status', '!=', 'completed');
         }
 
         // Apply sorting
