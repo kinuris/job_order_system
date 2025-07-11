@@ -7,7 +7,7 @@
                 <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Manage and track all job orders</p>
             </div>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {{-- Filter Dropdown - Mobile Friendly --}}
+                {{-- Status Filter --}}
                 <div class="relative">
                     <select id="status-filter" 
                             class="w-full sm:w-auto appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pr-10 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
@@ -20,6 +20,58 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </div>
+
+                {{-- Priority Filter --}}
+                <div class="relative">
+                    <select id="priority-filter" 
+                            class="w-full sm:w-auto appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pr-10 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Priorities</option>
+                        @foreach(\App\Models\JobOrder::PRIORITIES as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+
+                {{-- Date Range Filter --}}
+                <div class="relative">
+                    <select id="date-filter" 
+                            class="w-full sm:w-auto appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pr-10 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                    <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+
+                {{-- Assignment Filter --}}
+                <div class="relative">
+                    <select id="assignment-filter" 
+                            class="w-full sm:w-auto appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pr-10 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Assignments</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="unassigned">Unassigned</option>
+                    </select>
+                    <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+
+                {{-- Clear Filters Button --}}
+                <button id="clear-filters" 
+                        class="inline-flex items-center justify-center px-4 py-3 bg-gray-500 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-gray-600 focus:bg-gray-600 active:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150 min-h-[44px]">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Clear</span>
+                </button>
                 {{-- Add Job Order Button - Mobile Optimized --}}
                 <a href="{{ route('admin.job-orders.create') }}" 
                    class="inline-flex items-center justify-center px-4 py-3 bg-blue-600 border border-transparent rounded-lg font-semibold text-sm text-white hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 min-h-[44px]">
@@ -272,17 +324,54 @@
         }
     </style>
 
-    {{-- Enhanced Filter JavaScript --}}
+    {{-- Enhanced Multi-Filter JavaScript --}}
     <script>
-        document.getElementById('status-filter').addEventListener('change', function(e) {
-            const selectedStatus = e.target.value.toLowerCase();
+        // Filter state
+        let currentFilters = {
+            status: '',
+            priority: '',
+            date: '',
+            assignment: ''
+        };
+
+        // Get current date helpers
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        // Date comparison helper
+        function isDateInRange(dateString, range) {
+            const date = new Date(dateString);
+            const now = new Date();
+            
+            switch(range) {
+                case 'today':
+                    return date.toDateString() === today.toDateString();
+                case 'yesterday':
+                    return date.toDateString() === yesterday.toDateString();
+                case 'week':
+                    return date >= weekStart && date <= today;
+                case 'month':
+                    return date >= monthStart && date <= today;
+                case 'overdue':
+                    return date < today && !dateString.includes('completed');
+                default:
+                    return true;
+            }
+        }
+
+        // Apply all filters
+        function applyFilters() {
             const jobCards = document.querySelectorAll('.job-order-card');
             
             jobCards.forEach(card => {
-                if (!selectedStatus) {
-                    card.style.display = '';
-                } else {
-                    // Look for status badge in the card
+                let shouldShow = true;
+                
+                // Status filter
+                if (currentFilters.status) {
                     const statusBadges = card.querySelectorAll('span');
                     let hasMatchingStatus = false;
                     
@@ -298,14 +387,150 @@
                             'cancelled': 'cancelled'
                         };
                         
-                        if (statusMap[selectedStatus] && badgeText.includes(statusMap[selectedStatus])) {
+                        if (statusMap[currentFilters.status] && badgeText.includes(statusMap[currentFilters.status])) {
                             hasMatchingStatus = true;
                         }
                     });
                     
-                    card.style.display = hasMatchingStatus ? '' : 'none';
+                    if (!hasMatchingStatus) shouldShow = false;
                 }
+                
+                // Priority filter
+                if (currentFilters.priority && shouldShow) {
+                    const priorityBadges = card.querySelectorAll('span');
+                    let hasMatchingPriority = false;
+                    
+                    priorityBadges.forEach(badge => {
+                        const badgeText = badge.textContent.trim().toLowerCase();
+                        if (badgeText.includes(currentFilters.priority)) {
+                            hasMatchingPriority = true;
+                        }
+                    });
+                    
+                    if (!hasMatchingPriority) shouldShow = false;
+                }
+                
+                // Assignment filter
+                if (currentFilters.assignment && shouldShow) {
+                    const technicianSection = card.querySelector('svg + div, svg + p');
+                    const isAssigned = technicianSection && !technicianSection.textContent.includes('Unassigned');
+                    
+                    if (currentFilters.assignment === 'assigned' && !isAssigned) shouldShow = false;
+                    if (currentFilters.assignment === 'unassigned' && isAssigned) shouldShow = false;
+                }
+                
+                // Date filter
+                if (currentFilters.date && shouldShow) {
+                    const dateText = card.querySelector('span:last-child');
+                    if (dateText) {
+                        const dateString = dateText.textContent;
+                        
+                        if (currentFilters.date === 'overdue') {
+                            const hasLatebadge = card.querySelector('span.animate-pulse');
+                            if (!hasLatebadge) shouldShow = false;
+                        } else {
+                            // Extract date from "Created: Mar 15, 2024 at 2:30 PM" format
+                            const dateMatch = dateString.match(/Created: (.+)/);
+                            if (dateMatch) {
+                                const extractedDate = dateMatch[1].replace(' at ', ' ');
+                                if (!isDateInRange(extractedDate, currentFilters.date)) {
+                                    shouldShow = false;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                card.style.display = shouldShow ? '' : 'none';
             });
+            
+            // Update results count
+            updateResultsCount();
+        }
+
+        // Update results count
+        function updateResultsCount() {
+            const allCards = document.querySelectorAll('.job-order-card');
+            const visibleCards = document.querySelectorAll('.job-order-card[style=""]');
+            const hiddenCards = allCards.length - visibleCards.length;
+            
+            // Only show filter results indicator when filters are actually applied
+            const hasActiveFilters = currentFilters.status || currentFilters.priority || currentFilters.date || currentFilters.assignment;
+            
+            // Add or update results indicator
+            let resultsIndicator = document.getElementById('filter-results');
+            if (!resultsIndicator) {
+                resultsIndicator = document.createElement('div');
+                resultsIndicator.id = 'filter-results';
+                resultsIndicator.className = 'text-sm text-blue-600 dark:text-blue-400 mb-4 px-3 font-medium';
+                const cardContainer = document.querySelector('.space-y-3');
+                if (cardContainer) {
+                    cardContainer.parentNode.insertBefore(resultsIndicator, cardContainer);
+                }
+            }
+            
+            // Only show when filters are active and hiding some results
+            if (hasActiveFilters && hiddenCards > 0) {
+                resultsIndicator.textContent = `Filtered: ${visibleCards.length} of ${allCards.length} job orders shown`;
+                resultsIndicator.style.display = 'block';
+            } else {
+                resultsIndicator.style.display = 'none';
+            }
+        }
+
+        // Event listeners for filters
+        document.getElementById('status-filter').addEventListener('change', function(e) {
+            currentFilters.status = e.target.value.toLowerCase();
+            applyFilters();
+        });
+
+        document.getElementById('priority-filter').addEventListener('change', function(e) {
+            currentFilters.priority = e.target.value.toLowerCase();
+            applyFilters();
+        });
+
+        document.getElementById('date-filter').addEventListener('change', function(e) {
+            currentFilters.date = e.target.value;
+            applyFilters();
+        });
+
+        document.getElementById('assignment-filter').addEventListener('change', function(e) {
+            currentFilters.assignment = e.target.value;
+            applyFilters();
+        });
+
+        // Clear all filters
+        document.getElementById('clear-filters').addEventListener('click', function() {
+            // Reset all filter values
+            document.getElementById('status-filter').value = '';
+            document.getElementById('priority-filter').value = '';
+            document.getElementById('date-filter').value = '';
+            document.getElementById('assignment-filter').value = '';
+            
+            // Reset filter state
+            currentFilters = {
+                status: '',
+                priority: '',
+                date: '',
+                assignment: ''
+            };
+            
+            // Show all cards
+            const jobCards = document.querySelectorAll('.job-order-card');
+            jobCards.forEach(card => {
+                card.style.display = '';
+            });
+            
+            // Hide results indicator
+            const resultsIndicator = document.getElementById('filter-results');
+            if (resultsIndicator) {
+                resultsIndicator.style.display = 'none';
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            applyFilters();
         });
     </script>
 </x-layouts.app>
