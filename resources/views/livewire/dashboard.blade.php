@@ -418,30 +418,39 @@
                             </div>
 
                             {{-- Mobile-Optimized Action Buttons --}}
-                            @if($isTechnician && !in_array($job->status, ['completed', 'cancelled']))
+                            @if($isTechnician)
                                 <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        <button wire:click="openStatusModal({{ $job->id }})" 
-                                                class="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                            </svg>
-                                            Update Status
-                                        </button>
-                                        <button wire:click="openNotesModal({{ $job->id }})" 
-                                                class="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                            </svg>
-                                            Edit Notes
-                                        </button>
-                                        <button wire:click="openRescheduleModal({{ $job->id }})" 
-                                                class="flex items-center justify-center gap-2 px-4 py-3 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors font-medium sm:col-span-1">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                            </svg>
-                                            Reschedule
-                                        </button>
+                                        @if(!in_array($job->status, ['completed', 'cancelled']))
+                                            <button wire:click="openStatusModal({{ $job->id }})" 
+                                                    class="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Update Status
+                                            </button>
+                                        @endif
+                                        
+                                        {{-- Edit Notes button is always available for technicians, even for completed jobs --}}
+                                        @if($job->status !== 'cancelled')
+                                            <button wire:click="openNotesModal({{ $job->id }})" 
+                                                    class="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors font-medium {{ in_array($job->status, ['completed', 'cancelled']) ? 'sm:col-span-3' : '' }}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                                Edit Notes
+                                            </button>
+                                        @endif
+                                        
+                                        @if(!in_array($job->status, ['completed', 'cancelled']))
+                                            <button wire:click="openRescheduleModal({{ $job->id }})" 
+                                                    class="flex items-center justify-center gap-2 px-4 py-3 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors font-medium sm:col-span-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                Reschedule
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             @endif
