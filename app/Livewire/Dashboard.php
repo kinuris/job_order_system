@@ -24,6 +24,8 @@ class Dashboard extends Component
     public $recent_customers;
 
     public $sortBy = 'scheduled'; // Default sort by scheduled date
+
+    #[Url(as: 'c')]
     public $showCompletedJobs = true; // Show completed jobs by default
     public $search = ''; // Search term for filtering job orders
     
@@ -40,9 +42,6 @@ class Dashboard extends Component
     public $editingNotes = '';
     public $showStatusModal = false;
     public $showNotesModal = false;
-    public $showRescheduleModal = false;
-    public $rescheduleDate = '';
-    public $rescheduleTime = '';
     public $currentJob = null;
 
     public function mount()
@@ -457,64 +456,6 @@ class Dashboard extends Component
         $this->showNotesModal = false;
         $this->editingJobId = null;
         $this->editingNotes = '';
-        $this->currentJob = null;
-    }
-
-    public function openRescheduleModal($jobId)
-    {
-        if (!$this->isTechnician) return;
-        
-        $this->currentJob = JobOrder::find($jobId);
-        if (!$this->userCanAccessJobOrder($this->currentJob)) {
-            session()->flash('error', 'Unauthorized access to this job order.');
-            return;
-        }
-
-        // Don't allow rescheduling completed or cancelled jobs
-        if (in_array($this->currentJob->status, ['completed', 'cancelled'])) {
-            session()->flash('error', 'Cannot reschedule completed or cancelled jobs.');
-            return;
-        }
-        
-        $this->editingJobId = $jobId;
-        $this->rescheduleDate = $this->currentJob->scheduled_at ? $this->currentJob->scheduled_at->format('Y-m-d') : now()->addDay()->format('Y-m-d');
-        $this->rescheduleTime = $this->currentJob->scheduled_at ? $this->currentJob->scheduled_at->format('H:i') : '08:00';
-        $this->showRescheduleModal = true;
-    }
-
-    public function rescheduleJob()
-    {
-        if (!$this->isTechnician || !$this->currentJob) return;
-
-        $this->validate([
-            'rescheduleDate' => 'required|date|after_or_equal:today',
-            'rescheduleTime' => 'required|date_format:H:i',
-        ]);
-
-        try {
-            $scheduledAt = $this->rescheduleDate . ' ' . $this->rescheduleTime;
-            
-            $this->currentJob->update([
-                'scheduled_at' => $scheduledAt,
-                'status' => 'scheduled'
-            ]);
-            
-            $this->closeRescheduleModal();
-            // Data will refresh automatically on next render
-            
-            session()->flash('success', 'Job rescheduled successfully!');
-            
-        } catch (\Exception $e) {
-            session()->flash('error', 'Failed to reschedule job: ' . $e->getMessage());
-        }
-    }
-
-    public function closeRescheduleModal()
-    {
-        $this->showRescheduleModal = false;
-        $this->editingJobId = null;
-        $this->rescheduleDate = '';
-        $this->rescheduleTime = '';
         $this->currentJob = null;
     }
 
