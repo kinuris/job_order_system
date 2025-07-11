@@ -9,6 +9,7 @@ use App\Models\JobOrderMessage;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 
 class Dashboard extends Component
 {
@@ -19,6 +20,8 @@ class Dashboard extends Component
     public $recent_job_orders;
     public $recent_customers;
     public $my_job_orders;
+
+    public $sortBy = 'scheduled'; // Default sort by scheduled date
     
     // Chat properties
     public $currentJobId = null;
@@ -81,7 +84,7 @@ class Dashboard extends Component
             ];
 
             // Get jobs scheduled for today OR late jobs (past scheduled date and not completed/cancelled)
-            $this->my_job_orders = $assignedJobs->clone()
+            $query = $assignedJobs->clone()
                 ->with(['customer', 'technician.user'])
                 ->where(function($query) {
                     $query->whereDate('scheduled_at', today())
@@ -90,13 +93,22 @@ class Dashboard extends Component
                                        ->whereNotIn('status', ['completed', 'cancelled']);
                           });
                 })
-                ->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold'])
-                ->orderByRaw("CASE 
+                ->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold']);
+
+            // Apply sorting
+            if ($this->sortBy === 'priority') {
+                // Sort by priority: urgent, high, medium, low
+                $query->orderByRaw("FIELD(priority, 'urgent', 'high', 'medium', 'low')");
+            } else {
+                // Default: Sort by late jobs first, then by scheduled date
+                $query->orderByRaw("CASE 
                     WHEN scheduled_at < ? THEN 0 
                     ELSE 1 
                 END ASC", [now()->startOfDay()])
-                ->orderBy('scheduled_at', 'asc')
-                ->get();
+                ->orderBy('scheduled_at', 'asc');
+            }
+
+            $this->my_job_orders = $query->get();
         } else {
             $this->stats = [
                 'pending_jobs' => 0,
@@ -244,6 +256,17 @@ class Dashboard extends Component
             ->where('user_id', '!=', Auth::id())
             ->where('is_read', false)
             ->count();
+    }
+
+    public function updatedSortBy()
+    {
+        // Force reload of technician data when sort changes
+        if ($this->isTechnician) {
+            $this->loadTechnicianData();
+        }
+        
+        // Dispatch a browser event to confirm the update is working
+        $this->dispatch('sortUpdated', ['sortBy' => $this->sortBy]);
     }
 
     public function render()

@@ -196,7 +196,30 @@
 
         {{-- My Job Orders --}}
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Assigned Jobs</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Assigned Jobs</h3>
+                
+                {{-- Sort Options --}}
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
+                    <div class="relative">
+                        <select wire:model.live="sortBy" 
+                                class="text-sm px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="scheduled">📅 Schedule Date</option>
+                            <option value="priority">⚡ Priority</option>
+                        </select>
+                    </div>
+                    @if($sortBy === 'priority')
+                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
+                            Urgent → Low
+                        </span>
+                    @else
+                        <span class="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+                            Late → Today
+                        </span>
+                    @endif
+                </div>
+            </div>
             @if($my_job_orders && $my_job_orders->count() > 0)
                 <div class="space-y-4">
                     @foreach($my_job_orders as $job)
@@ -435,6 +458,11 @@
             if (chatRefreshInterval) {
                 clearInterval(chatRefreshInterval);
             }
+        });
+        
+        // Listen for sort updates
+        Livewire.on('sortUpdated', (data) => {
+            console.log('Sort updated to:', data.sortBy);
         });
     });
 </script>
