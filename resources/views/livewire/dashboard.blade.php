@@ -225,8 +225,8 @@
                                     </div>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->service_address }}</p>
                                 </div>
-                                <div class="text-right">
-                                    <div class="flex items-center gap-2 mb-2">
+                                <div class="text-right flex flex-col items-end">
+                                    <div class="mb-2">
                                         <button wire:click="openChatModal({{ $job->id }})" 
                                                 class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
