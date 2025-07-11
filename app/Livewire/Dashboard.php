@@ -95,30 +95,37 @@ class Dashboard extends Component
                 'completed_today' => $assignedJobs->clone()->where('status', 'completed')->whereDate('completed_at', today())->count(),
             ];
 
-            // Get jobs scheduled for today OR late jobs (past scheduled date and not completed/cancelled)
+            // Get jobs scheduled for today OR late jobs (past scheduled date and not completed/cancelled) OR completed today
             $query = $assignedJobs->clone()
                 ->with(['customer', 'technician.user'])
-                ->where(function($query) {
-                    $query->whereDate('scheduled_at', today())
-                          ->orWhere(function($subQuery) {
-                              $subQuery->where('scheduled_at', '<', now()->startOfDay())
-                                       ->whereNotIn('status', ['completed', 'cancelled']);
-                          });
+                ->where(function($mainQuery) {
+                    // Jobs scheduled for today (all statuses)
+                    $mainQuery->whereDate('scheduled_at', today())
+                              // OR late jobs that are still active
+                              ->orWhere(function($lateQuery) {
+                                  $lateQuery->where('scheduled_at', '<', now()->startOfDay())
+                                           ->whereNotIn('status', ['completed', 'cancelled']);
+                              });
+                    
+                    // Always include completed jobs from today if toggle is on
+                    if ($this->showCompletedJobs) {
+                        $mainQuery->orWhere(function($completedQuery) {
+                            $completedQuery->where('status', 'completed')
+                                          ->whereDate('completed_at', today());
+                        });
+                    }
                 });
 
-            // Include completed jobs based on toggle setting
-            if ($this->showCompletedJobs) {
-                // Show active jobs AND completed jobs from today
-                $query->where(function($q) {
-                    $q->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold'])
-                      ->orWhere(function($completedQuery) {
-                          $completedQuery->where('status', 'completed')
-                                        ->whereDate('completed_at', today());
-                      });
+            // If toggle is off, exclude completed jobs (but keep all jobs scheduled for today)
+            if (!$this->showCompletedJobs) {
+                $query->where(function($statusQuery) {
+                    $statusQuery->where('status', '!=', 'completed')
+                                ->orWhere(function($todayQuery) {
+                                    // But still show completed jobs if they were scheduled for today
+                                    $todayQuery->where('status', 'completed')
+                                              ->whereDate('scheduled_at', today());
+                                });
                 });
-            } else {
-                // Show only active jobs
-                $query->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold']);
             }
 
             // Apply sorting
@@ -350,9 +357,9 @@ class Dashboard extends Component
             
             if ($this->editingStatus === 'completed') {
                 if ($this->showCompletedJobs) {
-                    session()->flash('success', 'Job #' . $this->currentJob->id . ' marked as completed successfully! You can see it in the completed jobs section below.');
+                    session()->flash('success', 'Job #' . $this->currentJob->id . ' marked as completed successfully! You can see it in the completed jobs below.');
                 } else {
-                    session()->flash('success', 'Job #' . $this->currentJob->id . ' marked as completed successfully! Use the "Show Completed Today" button to view completed jobs.');
+                    session()->flash('success', 'Job #' . $this->currentJob->id . ' marked as completed successfully! Use the "Show Completed Jobs" button to view completed jobs.');
                 }
             } else {
                 session()->flash('success', 'Job status updated successfully!');
