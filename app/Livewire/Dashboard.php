@@ -10,16 +10,18 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
+use Livewire\WithPagination;
 
 class Dashboard extends Component
 {
+    use WithPagination;
+
     public $user;
     public $isAdmin = false;
     public $isTechnician = false;
     public $stats = [];
     public $recent_job_orders;
     public $recent_customers;
-    public $my_job_orders;
 
     public $sortBy = 'scheduled'; // Default sort by scheduled date
     public $showCompletedJobs = true; // Show completed jobs by default
@@ -94,54 +96,6 @@ class Dashboard extends Component
                 'in_progress_jobs' => $assignedJobs->clone()->where('status', 'in_progress')->count(),
                 'completed_today' => $assignedJobs->clone()->where('status', 'completed')->whereDate('completed_at', today())->count(),
             ];
-
-            // Get jobs scheduled for today OR late jobs (past scheduled date and not completed/cancelled) OR completed today
-            $query = $assignedJobs->clone()
-                ->with(['customer', 'technician.user'])
-                ->where(function($mainQuery) {
-                    // Jobs scheduled for today (all statuses)
-                    $mainQuery->whereDate('scheduled_at', today())
-                              // OR late jobs that are still active
-                              ->orWhere(function($lateQuery) {
-                                  $lateQuery->where('scheduled_at', '<', now()->startOfDay())
-                                           ->whereNotIn('status', ['completed', 'cancelled']);
-                              });
-                    
-                    // Always include completed jobs from today if toggle is on
-                    if ($this->showCompletedJobs) {
-                        $mainQuery->orWhere(function($completedQuery) {
-                            $completedQuery->where('status', 'completed')
-                                          ->whereDate('completed_at', today());
-                        });
-                    }
-                });
-
-            // If toggle is off, exclude completed jobs (but keep all jobs scheduled for today)
-            if (!$this->showCompletedJobs) {
-                $query->where(function($statusQuery) {
-                    $statusQuery->where('status', '!=', 'completed')
-                                ->orWhere(function($todayQuery) {
-                                    // But still show completed jobs if they were scheduled for today
-                                    $todayQuery->where('status', 'completed')
-                                              ->whereDate('scheduled_at', today());
-                                });
-                });
-            }
-
-            // Apply sorting
-            if ($this->sortBy === 'priority') {
-                // Sort by priority: urgent, high, medium, low
-                $query->orderByRaw("FIELD(priority, 'urgent', 'high', 'medium', 'low')");
-            } else {
-                // Default: Sort by late jobs first, then by scheduled date
-                $query->orderByRaw("CASE 
-                    WHEN scheduled_at < ? THEN 0 
-                    ELSE 1 
-                END ASC", [now()->startOfDay()])
-                ->orderBy('scheduled_at', 'asc');
-            }
-
-            $this->my_job_orders = $query->get();
         } else {
             $this->stats = [
                 'pending_jobs' => 0,
@@ -149,8 +103,70 @@ class Dashboard extends Component
                 'in_progress_jobs' => 0,
                 'completed_today' => 0,
             ];
-            $this->my_job_orders = collect();
         }
+    }
+
+    private function getMyJobOrders()
+    {
+        if (!$this->isTechnician) {
+            return collect();
+        }
+
+        $technician = $this->user->technician;
+        
+        if (!$technician) {
+            return collect();
+        }
+
+        $assignedJobs = JobOrder::where('technician_id', $technician->id);
+
+        // Get jobs scheduled for today OR late jobs (past scheduled date and not completed/cancelled) OR completed today
+        $query = $assignedJobs->clone()
+            ->with(['customer', 'technician.user'])
+            ->where(function($mainQuery) {
+                // Jobs scheduled for today (all statuses)
+                $mainQuery->whereDate('scheduled_at', today())
+                          // OR late jobs that are still active
+                          ->orWhere(function($lateQuery) {
+                              $lateQuery->where('scheduled_at', '<', now()->startOfDay())
+                                       ->whereNotIn('status', ['completed', 'cancelled']);
+                          });
+                
+                // Always include completed jobs from today if toggle is on
+                if ($this->showCompletedJobs) {
+                    $mainQuery->orWhere(function($completedQuery) {
+                        $completedQuery->where('status', 'completed')
+                                      ->whereDate('completed_at', today());
+                    });
+                }
+            });
+
+        // If toggle is off, exclude completed jobs (but keep all jobs scheduled for today)
+        if (!$this->showCompletedJobs) {
+            $query->where(function($statusQuery) {
+                $statusQuery->where('status', '!=', 'completed')
+                            ->orWhere(function($todayQuery) {
+                                // But still show completed jobs if they were scheduled for today
+                                $todayQuery->where('status', 'completed')
+                                          ->whereDate('scheduled_at', today());
+                            });
+            });
+        }
+
+        // Apply sorting
+        if ($this->sortBy === 'priority') {
+            // Sort by priority: urgent, high, medium, low
+            $query->orderByRaw("FIELD(priority, 'urgent', 'high', 'medium', 'low')");
+        } else {
+            // Default: Sort by late jobs first, then by scheduled date
+            $query->orderByRaw("CASE 
+                WHEN scheduled_at < ? THEN 0 
+                ELSE 1 
+            END ASC", [now()->startOfDay()])
+            ->orderBy('scheduled_at', 'asc');
+        }
+
+        return $query->paginate(7);
     }
 
     public function openChatModal($jobId)
@@ -293,10 +309,8 @@ class Dashboard extends Component
 
     public function updatedSortBy()
     {
-        // Force reload of technician data when sort changes
-        if ($this->isTechnician) {
-            $this->loadTechnicianData();
-        }
+        // Reset pagination when sort changes
+        $this->resetPage();
         
         // Dispatch a browser event to confirm the update is working
         $this->dispatch('sortUpdated', ['sortBy' => $this->sortBy]);
@@ -306,9 +320,8 @@ class Dashboard extends Component
     {
         $this->showCompletedJobs = !$this->showCompletedJobs;
         
-        if ($this->isTechnician) {
-            $this->loadTechnicianData();
-        }
+        // Reset pagination when toggle changes
+        $this->resetPage();
         
         $this->dispatch('completedJobsToggled', ['showing' => $this->showCompletedJobs]);
     }
@@ -353,7 +366,7 @@ class Dashboard extends Component
             $result = $this->currentJob->update($updates);
             
             $this->closeStatusModal();
-            $this->loadTechnicianData(); // Refresh the data
+            // Data will refresh automatically on next render
             
             if ($this->editingStatus === 'completed') {
                 if ($this->showCompletedJobs) {
@@ -407,7 +420,7 @@ class Dashboard extends Component
             ]);
             
             $this->closeNotesModal();
-            $this->loadTechnicianData(); // Refresh the data
+            // Data will refresh automatically on next render
             
             session()->flash('success', 'Notes updated successfully!');
             
@@ -464,7 +477,7 @@ class Dashboard extends Component
             ]);
             
             $this->closeRescheduleModal();
-            $this->loadTechnicianData(); // Refresh the data
+            // Data will refresh automatically on next render
             
             session()->flash('success', 'Job rescheduled successfully!');
             
@@ -484,6 +497,8 @@ class Dashboard extends Component
 
     public function render()
     {
-        return view('livewire.dashboard');
+        return view('livewire.dashboard', [
+            'my_job_orders' => $this->getMyJobOrders(),
+        ]);
     }
 }

@@ -360,6 +360,11 @@
                         </div>
                     @endforeach
                 </div>
+                
+                {{-- Pagination --}}
+                <div class="mt-6">
+                    {{ $my_job_orders->links() }}
+                </div>
             @else
                 <p class="text-gray-500 dark:text-gray-400">No assigned jobs.</p>
             @endif
