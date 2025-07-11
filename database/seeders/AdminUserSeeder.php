@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\JobOrder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AdminUserSeeder extends Seeder
 {
@@ -16,73 +17,51 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Clean up existing data first
-        $this->cleanupData();
+        // Clean up all existing data first
+        $this->cleanupAllData();
 
-        // Create an admin user
-        $adminUser = User::firstOrCreate(
-            ['username' => 'admin'],
-            [
-                'name' => 'System Administrator',
-                'username' => 'admin',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-            ]
-        );
+        // Create the admin user
+        $adminUser = User::create([
+            'name' => 'System Administrator',
+            'username' => 'admin',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
 
-        // Create a technician user
-        $techUser = User::firstOrCreate(
-            ['username' => 'tech1'],
-            [
-                'name' => 'John Technician',
-                'username' => 'tech1',
-                'password' => Hash::make('password'),
-                'role' => 'technician',
-            ]
-        );
+        // Create the technician user
+        $techUser = User::create([
+            'name' => 'Tech User',
+            'username' => 'tech1',
+            'password' => Hash::make('password'),
+            'role' => 'technician',
+        ]);
 
         // Create technician profile for the technician user
-        Technician::firstOrCreate(
-            ['user_id' => $techUser->id],
-            [
-                'user_id' => $techUser->id,
-                'phone_number' => '+1234567890',
-            ]
-        );
+        Technician::create([
+            'user_id' => $techUser->id,
+            'phone_number' => '+1234567890',
+        ]);
+
+        $this->command->info('Database seeded with 1 admin and 1 technician user.');
     }
 
     /**
-     * Clean up existing customer and job order data.
+     * Clean up all existing data.
      */
-    private function cleanupData(): void
+    private function cleanupAllData(): void
     {
-        // Remove all job orders first (due to foreign key constraints)
+        // Disable foreign key checks to allow truncation
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        // Remove all data
         JobOrder::truncate();
+        Customer::truncate();
+        Technician::truncate();
+        User::truncate();
         
-        // Get all customers
-        $customers = Customer::all();
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         
-        if ($customers->count() > 1) {
-            // Keep only the first customer and delete the rest
-            $firstCustomer = $customers->first();
-            Customer::where('id', '!=', $firstCustomer->id)->delete();
-            
-            $this->command->info('Removed ' . ($customers->count() - 1) . ' customer records, kept 1.');
-        } elseif ($customers->count() === 0) {
-            // Create a sample customer if none exist
-            Customer::create([
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'john.doe@example.com',
-                'phone_number' => '+1234567890',
-                'service_address' => '123 Main Street, City, State 12345',
-            ]);
-            
-            $this->command->info('Created 1 sample customer record.');
-        } else {
-            $this->command->info('Kept existing customer record.');
-        }
-        
-        $this->command->info('Removed all job order records.');
+        $this->command->info('Cleared all existing records from database.');
     }
 }
