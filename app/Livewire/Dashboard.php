@@ -25,6 +25,7 @@ class Dashboard extends Component
 
     public $sortBy = 'scheduled'; // Default sort by scheduled date
     public $showCompletedJobs = true; // Show completed jobs by default
+    public $search = ''; // Search term for filtering job orders
     
     // Chat properties
     public $currentJobId = null;
@@ -140,6 +141,19 @@ class Dashboard extends Component
                     });
                 }
             });
+
+        // Apply search filter if search term is provided
+        if (!empty($this->search)) {
+            $searchTerm = '%' . $this->search . '%';
+            $query->whereHas('customer', function($customerQuery) use ($searchTerm) {
+                $customerQuery->where(function($nameQuery) use ($searchTerm) {
+                    $nameQuery->where('first_name', 'LIKE', $searchTerm)
+                              ->orWhere('last_name', 'LIKE', $searchTerm)
+                              ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", [$searchTerm])
+                              ->orWhere('service_address', 'LIKE', $searchTerm);
+                });
+            });
+        }
 
         // If toggle is off, exclude completed jobs (but keep all jobs scheduled for today)
         if (!$this->showCompletedJobs) {
@@ -305,6 +319,22 @@ class Dashboard extends Component
             ->where('user_id', '!=', Auth::id())
             ->where('is_read', false)
             ->count();
+    }
+
+    public function updatedSearch()
+    {
+        // Reset pagination when search changes
+        $this->resetPage();
+        
+        // Dispatch a browser event to confirm the search is working
+        $this->dispatch('searchUpdated', ['search' => $this->search]);
+    }
+
+    public function clearSearch()
+    {
+        $this->search = '';
+        $this->resetPage();
+        $this->dispatch('searchCleared');
     }
 
     public function updatedSortBy()
