@@ -22,6 +22,7 @@ class Dashboard extends Component
     public $my_job_orders;
 
     public $sortBy = 'scheduled'; // Default sort by scheduled date
+    public $showCompletedJobs = true; // Show completed jobs by default
     
     // Chat properties
     public $currentJobId = null;
@@ -29,6 +30,17 @@ class Dashboard extends Component
     public $newMessage = '';
     public $showChatModal = false;
     public $chatTitle = 'Job Chat';
+
+    // Job order management properties
+    public $editingJobId = null;
+    public $editingStatus = '';
+    public $editingNotes = '';
+    public $showStatusModal = false;
+    public $showNotesModal = false;
+    public $showRescheduleModal = false;
+    public $rescheduleDate = '';
+    public $rescheduleTime = '';
+    public $currentJob = null;
 
     public function mount()
     {
@@ -92,8 +104,22 @@ class Dashboard extends Component
                               $subQuery->where('scheduled_at', '<', now()->startOfDay())
                                        ->whereNotIn('status', ['completed', 'cancelled']);
                           });
-                })
-                ->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold']);
+                });
+
+            // Include completed jobs based on toggle setting
+            if ($this->showCompletedJobs) {
+                // Show active jobs AND completed jobs from today
+                $query->where(function($q) {
+                    $q->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold'])
+                      ->orWhere(function($completedQuery) {
+                          $completedQuery->where('status', 'completed')
+                                        ->whereDate('completed_at', today());
+                      });
+                });
+            } else {
+                // Show only active jobs
+                $query->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold']);
+            }
 
             // Apply sorting
             if ($this->sortBy === 'priority') {
@@ -267,6 +293,186 @@ class Dashboard extends Component
         
         // Dispatch a browser event to confirm the update is working
         $this->dispatch('sortUpdated', ['sortBy' => $this->sortBy]);
+    }
+
+    public function toggleCompletedJobs()
+    {
+        $this->showCompletedJobs = !$this->showCompletedJobs;
+        
+        if ($this->isTechnician) {
+            $this->loadTechnicianData();
+        }
+        
+        $this->dispatch('completedJobsToggled', ['showing' => $this->showCompletedJobs]);
+    }
+
+    // Job Management Methods for Technicians
+    
+    public function openStatusModal($jobId)
+    {
+        if (!$this->isTechnician) return;
+        
+        $this->currentJob = JobOrder::find($jobId);
+        if (!$this->userCanAccessJobOrder($this->currentJob)) {
+            session()->flash('error', 'Unauthorized access to this job order.');
+            return;
+        }
+        
+        $this->editingJobId = $jobId;
+        $this->editingStatus = $this->currentJob->status;
+        $this->showStatusModal = true;
+    }
+
+    public function updateJobStatus()
+    {
+        if (!$this->isTechnician || !$this->currentJob) return;
+
+        $this->validate([
+            'editingStatus' => 'required|in:en_route,in_progress,on_hold,completed',
+        ]);
+
+        try {
+            $updates = ['status' => $this->editingStatus];
+            
+            // Update timestamps based on status
+            if ($this->editingStatus === 'in_progress' && !$this->currentJob->started_at) {
+                $updates['started_at'] = now();
+            }
+            
+            if ($this->editingStatus === 'completed') {
+                $updates['completed_at'] = now();
+            }
+
+            $result = $this->currentJob->update($updates);
+            
+            $this->closeStatusModal();
+            $this->loadTechnicianData(); // Refresh the data
+            
+            if ($this->editingStatus === 'completed') {
+                if ($this->showCompletedJobs) {
+                    session()->flash('success', 'Job #' . $this->currentJob->id . ' marked as completed successfully! You can see it in the completed jobs section below.');
+                } else {
+                    session()->flash('success', 'Job #' . $this->currentJob->id . ' marked as completed successfully! Use the "Show Completed Today" button to view completed jobs.');
+                }
+            } else {
+                session()->flash('success', 'Job status updated successfully!');
+            }
+            
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to update job status: ' . $e->getMessage());
+        }
+    }
+
+    public function closeStatusModal()
+    {
+        $this->showStatusModal = false;
+        $this->editingJobId = null;
+        $this->editingStatus = '';
+        $this->currentJob = null;
+    }
+
+    public function openNotesModal($jobId)
+    {
+        if (!$this->isTechnician) return;
+        
+        $this->currentJob = JobOrder::find($jobId);
+        if (!$this->userCanAccessJobOrder($this->currentJob)) {
+            session()->flash('error', 'Unauthorized access to this job order.');
+            return;
+        }
+        
+        $this->editingJobId = $jobId;
+        $this->editingNotes = $this->currentJob->resolution_notes ?? '';
+        $this->showNotesModal = true;
+    }
+
+    public function updateJobNotes()
+    {
+        if (!$this->isTechnician || !$this->currentJob) return;
+
+        $this->validate([
+            'editingNotes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $this->currentJob->update([
+                'resolution_notes' => $this->editingNotes
+            ]);
+            
+            $this->closeNotesModal();
+            $this->loadTechnicianData(); // Refresh the data
+            
+            session()->flash('success', 'Notes updated successfully!');
+            
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to update notes: ' . $e->getMessage());
+        }
+    }
+
+    public function closeNotesModal()
+    {
+        $this->showNotesModal = false;
+        $this->editingJobId = null;
+        $this->editingNotes = '';
+        $this->currentJob = null;
+    }
+
+    public function openRescheduleModal($jobId)
+    {
+        if (!$this->isTechnician) return;
+        
+        $this->currentJob = JobOrder::find($jobId);
+        if (!$this->userCanAccessJobOrder($this->currentJob)) {
+            session()->flash('error', 'Unauthorized access to this job order.');
+            return;
+        }
+
+        // Don't allow rescheduling completed or cancelled jobs
+        if (in_array($this->currentJob->status, ['completed', 'cancelled'])) {
+            session()->flash('error', 'Cannot reschedule completed or cancelled jobs.');
+            return;
+        }
+        
+        $this->editingJobId = $jobId;
+        $this->rescheduleDate = $this->currentJob->scheduled_at ? $this->currentJob->scheduled_at->format('Y-m-d') : now()->addDay()->format('Y-m-d');
+        $this->rescheduleTime = $this->currentJob->scheduled_at ? $this->currentJob->scheduled_at->format('H:i') : '08:00';
+        $this->showRescheduleModal = true;
+    }
+
+    public function rescheduleJob()
+    {
+        if (!$this->isTechnician || !$this->currentJob) return;
+
+        $this->validate([
+            'rescheduleDate' => 'required|date|after_or_equal:today',
+            'rescheduleTime' => 'required|date_format:H:i',
+        ]);
+
+        try {
+            $scheduledAt = $this->rescheduleDate . ' ' . $this->rescheduleTime;
+            
+            $this->currentJob->update([
+                'scheduled_at' => $scheduledAt,
+                'status' => 'scheduled'
+            ]);
+            
+            $this->closeRescheduleModal();
+            $this->loadTechnicianData(); // Refresh the data
+            
+            session()->flash('success', 'Job rescheduled successfully!');
+            
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to reschedule job: ' . $e->getMessage());
+        }
+    }
+
+    public function closeRescheduleModal()
+    {
+        $this->showRescheduleModal = false;
+        $this->editingJobId = null;
+        $this->rescheduleDate = '';
+        $this->rescheduleTime = '';
+        $this->currentJob = null;
     }
 
     public function render()
