@@ -24,7 +24,7 @@ class JobOrderController extends Controller
     {
         $jobOrders = JobOrder::with(['customer', 'technician'])
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(8);
         
         return view('admin.job-orders.index', compact('jobOrders'));
     }
