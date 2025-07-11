@@ -242,6 +242,11 @@
                 </div>
             </div>
             @if($my_job_orders && $my_job_orders->count() > 0)
+                {{-- Pagination --}}
+                <div class="mb-4">
+                    {{ $my_job_orders->links() }}
+                </div>
+                
                 <div class="space-y-4">
                     @foreach($my_job_orders as $job)
                         <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 
@@ -359,11 +364,6 @@
                             @endif
                         </div>
                     @endforeach
-                </div>
-                
-                {{-- Pagination --}}
-                <div class="mt-6">
-                    {{ $my_job_orders->links() }}
                 </div>
             @else
                 <p class="text-gray-500 dark:text-gray-400">No assigned jobs.</p>
