@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-4 sm:space-y-6 px-2 sm:px-0">
     @if($isAdmin)
         {{-- Admin Dashboard --}}
         <div>
@@ -161,47 +161,69 @@
 
     @elseif($isTechnician)
         {{-- Technician Dashboard --}}
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Technician Dashboard</h1>
-            <p class="text-gray-600 dark:text-gray-400">Welcome back, {{ $user->name }}!</p>
+        <div class="px-1">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Technician Dashboard</h1>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Welcome back, {{ $user->name }}!</p>
         </div>
 
-        {{-- Technician Stats --}}
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        {{-- Technician Stats - Mobile Optimized --}}
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-6">
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-blue-900 dark:text-blue-100">{{ $stats['pending_jobs'] }}</p>
-                    <p class="text-sm text-blue-600 dark:text-blue-400">Pending Jobs</p>
+                    <div class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg sm:text-2xl font-bold text-blue-900 dark:text-blue-100">{{ $stats['pending_jobs'] }}</p>
+                    <p class="text-xs sm:text-sm text-blue-600 dark:text-blue-400 leading-tight">Pending</p>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-6">
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-yellow-900 dark:text-yellow-100">{{ $stats['scheduled_jobs'] }}</p>
-                    <p class="text-sm text-yellow-600 dark:text-yellow-400">Scheduled</p>
+                    <div class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg sm:text-2xl font-bold text-yellow-900 dark:text-yellow-100">{{ $stats['scheduled_jobs'] }}</p>
+                    <p class="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 leading-tight">Scheduled</p>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-6">
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-green-900 dark:text-green-100">{{ $stats['in_progress_jobs'] }}</p>
-                    <p class="text-sm text-green-600 dark:text-green-400">In Progress</p>
+                    <div class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg sm:text-2xl font-bold text-green-900 dark:text-green-100">{{ $stats['in_progress_jobs'] }}</p>
+                    <p class="text-xs sm:text-sm text-green-600 dark:text-green-400 leading-tight">In Progress</p>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-6">
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-purple-900 dark:text-purple-100">{{ $stats['completed_today'] }}</p>
-                    <p class="text-sm text-purple-600 dark:text-purple-400">Completed Today</p>
+                    <div class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg sm:text-2xl font-bold text-purple-900 dark:text-purple-100">{{ $stats['completed_today'] }}</p>
+                    <p class="text-xs sm:text-sm text-purple-600 dark:text-purple-400 leading-tight">Completed</p>
                 </div>
             </div>
         </div>
 
-        {{-- My Job Orders --}}
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Assigned Jobs</h3>
+        {{-- My Job Orders - Mobile Optimized --}}
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-6">
+            {{-- Header --}}
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Assigned Jobs</h3>
                 
-                {{-- Search Bar --}}
-                <div class="mb-4">
-                    <div class="relative max-w-md">
+                {{-- Mobile-First Controls --}}
+                <div class="space-y-3">
+                    {{-- Search Bar --}}
+                    <div class="relative">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -209,8 +231,8 @@
                         </div>
                         <input wire:model.live.debounce.300ms="search" 
                                type="text" 
-                               placeholder="Search by customer name or address..." 
-                               class="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                               placeholder="Search jobs..." 
+                               class="w-full pl-10 pr-10 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         @if($search)
                             <button wire:click="clearSearch" 
                                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -221,39 +243,35 @@
                         @endif
                     </div>
                     @if($search)
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
                             Searching for: "<span class="font-medium">{{ $search }}</span>"
                         </p>
                     @endif
-                </div>
-                
-                {{-- Sort Options and Toggle --}}
-                <div class="flex items-center gap-4">
-                    {{-- Sort Dropdown --}}
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
-                        <div class="relative">
+                    
+                    {{-- Controls Row --}}
+                    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                        {{-- Sort Dropdown --}}
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">Sort:</label>
                             <select wire:model.live="sortBy" 
-                                    class="text-sm px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="scheduled">📅 Schedule Date</option>
-                                <option value="priority">⚡ Priority</option>
+                                    class="flex-1 sm:flex-none text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="scheduled">📅 By Date</option>
+                                <option value="priority">⚡ By Priority</option>
                             </select>
+                            @if($sortBy === 'priority')
+                                <span class="hidden sm:inline text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full whitespace-nowrap">
+                                    Urgent → Low
+                                </span>
+                            @else
+                                <span class="hidden sm:inline text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full whitespace-nowrap">
+                                    Late → Today
+                                </span>
+                            @endif
                         </div>
-                        @if($sortBy === 'priority')
-                            <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
-                                Urgent → Low
-                            </span>
-                        @else
-                            <span class="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full">
-                                Late → Today
-                            </span>
-                        @endif
-                    </div>
 
-                    {{-- Completed Jobs Toggle --}}
-                    <div class="flex items-center gap-2">
+                        {{-- Completed Jobs Toggle --}}
                         <button wire:click="toggleCompletedJobs" 
-                                class="flex items-center gap-2 px-3 py-1 text-sm rounded-md border transition-colors
+                                class="flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors font-medium min-h-[40px]
                                 {{ $showCompletedJobs 
                                     ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700' 
                                     : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600' }}">
@@ -264,7 +282,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
                                 @endif
                             </svg>
-                            {{ $showCompletedJobs ? 'Hide' : 'Show' }} Completed Jobs
+                            <span class="sm:hidden">{{ $showCompletedJobs ? 'Hide' : 'Show' }} Done</span>
+                            <span class="hidden sm:inline">{{ $showCompletedJobs ? 'Hide' : 'Show' }} Completed Jobs</span>
                         </button>
                     </div>
                 </div>
@@ -275,9 +294,10 @@
                     {{ $my_job_orders->links() }}
                 </div>
                 
-                <div class="space-y-4">
+                {{-- Mobile-Optimized Job Cards --}}
+                <div class="space-y-3 sm:space-y-4">
                     @foreach($my_job_orders as $job)
-                        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 
+                        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4 
                             @if($job->status === 'completed')
                                 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-700 opacity-80
                             @elseif($job->isLate())
@@ -285,46 +305,47 @@
                             @else
                                 bg-gray-50 dark:bg-gray-700/50
                             @endif">
-                            {{-- Job Header --}}
-                            <div class="flex items-center justify-between mb-3">
-                                <div>
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <h4 class="font-medium text-gray-900 dark:text-gray-100">Job #{{ $job->id }}</h4>
+                            
+                            {{-- Mobile-First Job Header --}}
+                            <div class="space-y-2">
+                                {{-- Top Row: Job ID and Status Badges --}}
+                                <div class="flex items-start justify-between">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h4 class="font-semibold text-gray-900 dark:text-gray-100 text-base">Job #{{ $job->id }}</h4>
                                         @if($job->status === 'completed')
                                             <span class="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                                ✅ COMPLETED TODAY
+                                                ✅ DONE
                                             </span>
                                         @elseif($job->isLate())
                                             <span class="px-2 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 animate-pulse">
-                                                {{ $job->getDaysLate() }} {{ $job->getDaysLate() == 1 ? 'DAY' : 'DAYS' }} LATE
+                                                {{ $job->getDaysLate() }}D LATE
                                             </span>
                                         @endif
                                     </div>
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full 
-                                            @if($job->priority === 'urgent') bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
-                                            @elseif($job->priority === 'high') bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
-                                            @elseif($job->priority === 'medium') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
-                                            @else bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 @endif">
-                                            {{ ucfirst($job->priority) }}
-                                        </span>
-                                    </div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->service_address }}</p>
+                                    
+                                    {{-- Chat Button - Always Visible on Mobile --}}
+                                    <button wire:click="openChatModal({{ $job->id }})" 
+                                            class="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors min-h-[36px]">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a9.863 9.863 0 01-4.906-1.287A3 3 0 014 19h1a8 8 0 016-7.265M17 12a8 8 0 00-8-8 8 8 0 00-8 8"></path>
+                                        </svg>
+                                        <span class="hidden sm:inline">Chat</span>
+                                        @if($this->getUnreadMessageCount($job->id) > 0)
+                                            <span class="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs font-bold min-w-[18px] text-center">{{ $this->getUnreadMessageCount($job->id) }}</span>
+                                        @endif
+                                    </button>
                                 </div>
-                                <div class="text-right flex flex-col items-end">
-                                    <div class="mb-2">
-                                        <button wire:click="openChatModal({{ $job->id }})" 
-                                                class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition flex items-center gap-1">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a9.863 9.863 0 01-4.906-1.287A3 3 0 014 19h1a8 8 0 016-7.265M17 12a8 8 0 00-8-8 8 8 0 00-8 8"></path>
-                                            </svg>
-                                            Chat
-                                            @if($this->getUnreadMessageCount($job->id) > 0)
-                                                <span class="bg-red-500 text-white rounded-full px-1 text-xs">{{ $this->getUnreadMessageCount($job->id) }}</span>
-                                            @endif
-                                        </button>
-                                    </div>
+                                
+                                {{-- Customer and Priority Row --}}
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                        @if($job->priority === 'urgent') bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                                        @elseif($job->priority === 'high') bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
+                                        @elseif($job->priority === 'medium') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
+                                        @else bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 @endif">
+                                        {{ ucfirst($job->priority) }}
+                                    </span>
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full 
                                         @if($job->status === 'pending_dispatch') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
                                         @elseif($job->status === 'scheduled') bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
@@ -335,59 +356,93 @@
                                         @else bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 @endif">
                                         {{ ucfirst(str_replace('_', ' ', $job->status)) }}
                                     </span>
-                                    @if($job->status === 'completed' && $job->completed_at)
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            Completed: {{ $job->completed_at->format('M d, Y \a\t g:i A') }}
-                                            @if($job->completed_at->isToday())
-                                                <span class="text-green-600 dark:text-green-400 font-medium">(TODAY)</span>
-                                            @endif
-                                        </p>
-                                    @elseif($job->scheduled_at)
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            Scheduled: {{ $job->scheduled_at->format('M d, Y') }}
-                                            @if($job->isLate())
-                                                <span class="text-red-600 dark:text-red-400 font-medium">(OVERDUE)</span>
-                                            @elseif($job->scheduled_at->isToday())
-                                                <span class="text-blue-600 dark:text-blue-400 font-medium">(TODAY)</span>
-                                            @endif
-                                        </p>
+                                </div>
+                                
+                                {{-- Address --}}
+                                <div class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <p class="text-base text-gray-800 dark:text-gray-200 leading-relaxed">{{ $job->customer->service_address }}</p>
+                                </div>
+                                
+                                {{-- Date Information --}}
+                                @if($job->status === 'completed' && $job->completed_at)
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span>Completed: {{ $job->completed_at->format('M d, Y \a\t g:i A') }}
+                                        @if($job->completed_at->isToday())
+                                            <span class="text-green-600 dark:text-green-400 font-medium">(TODAY)</span>
+                                        @endif
+                                        </span>
+                                    </div>
+                                @elseif($job->scheduled_at)
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <svg class="w-4 h-4 {{ $job->isLate() ? 'text-red-500' : ($job->scheduled_at->isToday() ? 'text-blue-500' : 'text-gray-400') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span>Scheduled: {{ $job->scheduled_at->format('M d, Y') }}
+                                        @if($job->isLate())
+                                            <span class="text-red-600 dark:text-red-400 font-medium">(OVERDUE)</span>
+                                        @elseif($job->scheduled_at->isToday())
+                                            <span class="text-blue-600 dark:text-blue-400 font-medium">(TODAY)</span>
+                                        @endif
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- Job Details --}}
+                            <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                <div class="space-y-2">
+                                    <div>
+                                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Description</span>
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ $job->description }}</p>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div>
+                                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Type</span>
+                                            <p class="text-sm text-gray-700 dark:text-gray-300">{{ ucfirst($job->type) }}</p>
+                                        </div>
+                                    </div>
+                                    @if($job->resolution_notes)
+                                        <div>
+                                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Notes</span>
+                                            <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ $job->resolution_notes }}</p>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
 
-                            {{-- Job Description --}}
-                            <div class="mb-3">
-                                <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Description:</strong> {{ $job->description }}</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Type:</strong> {{ ucfirst($job->type) }}</p>
-                                @if($job->resolution_notes)
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-2"><strong>Notes:</strong> {{ $job->resolution_notes }}</p>
-                                @endif
-                            </div>
-
-                            {{-- Technician Action Buttons --}}
+                            {{-- Mobile-Optimized Action Buttons --}}
                             @if($isTechnician && !in_array($job->status, ['completed', 'cancelled']))
-                                <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
-                                    <button wire:click="openStatusModal({{ $job->id }})" 
-                                            class="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Update Status
-                                    </button>
-                                    <button wire:click="openNotesModal({{ $job->id }})" 
-                                            class="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 transition-colors">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        Edit Notes
-                                    </button>
-                                    <button wire:click="openRescheduleModal({{ $job->id }})" 
-                                            class="flex items-center gap-1 px-3 py-1 bg-orange-600 text-white text-xs rounded-md hover:bg-orange-700 transition-colors">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        Reschedule
-                                    </button>
+                                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <button wire:click="openStatusModal({{ $job->id }})" 
+                                                class="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Update Status
+                                        </button>
+                                        <button wire:click="openNotesModal({{ $job->id }})" 
+                                                class="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                            Edit Notes
+                                        </button>
+                                        <button wire:click="openRescheduleModal({{ $job->id }})" 
+                                                class="flex items-center justify-center gap-2 px-4 py-3 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors font-medium sm:col-span-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                            Reschedule
+                                        </button>
+                                    </div>
                                 </div>
                             @endif
                         </div>
@@ -410,67 +465,67 @@
         </div>
     @endif
 
-    {{-- Chat Modal --}}
+    {{-- Mobile-Optimized Chat Modal --}}
     @if($showChatModal)
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-all duration-300">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl h-[32rem] flex flex-col border border-gray-200 dark:border-gray-600 transform transition-all duration-300" 
+        <div class="flex items-end sm:items-center justify-center min-h-screen p-2 sm:p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-3xl h-[85vh] sm:h-[32rem] flex flex-col border border-gray-200 dark:border-gray-600 transform transition-all duration-300" 
                  x-data="{ scrollToBottom() { setTimeout(() => { const container = this.$refs.messagesContainer; if (container) container.scrollTop = container.scrollHeight; }, 100); } }"
                  x-init="scrollToBottom()"
                  @chat-message-sent.window="scrollToBottom()">
                 
-                {{-- Chat Header --}}
-                <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 rounded-t-xl">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {{-- Mobile-Optimized Chat Header --}}
+                <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 rounded-t-2xl sm:rounded-t-xl">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a9.863 9.863 0 01-4.906-1.287A3 3 0 014 19h1a8 8 0 016-7.265M17 12a8 8 0 00-8-8 8 8 0 00-8 8"></path>
                             </svg>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $chatTitle }}</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Real-time communication</p>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">{{ $chatTitle }}</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:block">Real-time communication</p>
                         </div>
                     </div>
-                    <button wire:click="closeChatModal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button wire:click="closeChatModal" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex-shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
 
-                {{-- Chat Messages --}}
-                <div x-ref="messagesContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-900/50">
+                {{-- Mobile-Optimized Chat Messages --}}
+                <div x-ref="messagesContainer" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 bg-gray-50 dark:bg-gray-900/50">
                     @if(empty($chatMessages))
-                        <div class="text-center py-12">
-                            <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="text-center py-8 sm:py-12">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                                <svg class="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a9.863 9.863 0 01-4.906-1.287A3 3 0 014 19h1a8 8 0 016-7.265M17 12a8 8 0 00-8-8 8 8 0 00-8 8"></path>
                                 </svg>
                             </div>
-                            <p class="text-gray-500 dark:text-gray-400 text-lg">No messages yet</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-base sm:text-lg">No messages yet</p>
                             <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">Start the conversation!</p>
                         </div>
                     @else
                         @foreach($chatMessages as $message)
                             <div class="flex {{ $message['is_own_message'] ? 'justify-end' : 'justify-start' }} animate-fade-in">
-                                <div class="max-w-sm lg:max-w-md">
+                                <div class="max-w-[85%] sm:max-w-sm lg:max-w-md">
                                     @if(!$message['is_own_message'])
                                         <div class="flex items-center mb-1 ml-1">
-                                            <div class="w-6 h-6 rounded-full {{ $message['user_role'] === 'admin' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30' }} flex items-center justify-center mr-2">
+                                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full {{ $message['user_role'] === 'admin' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30' }} flex items-center justify-center mr-2">
                                                 <span class="text-xs font-semibold {{ $message['user_role'] === 'admin' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400' }}">
                                                     {{ substr($message['user_name'], 0, 1) }}
                                                 </span>
                                             </div>
-                                            <span class="text-xs font-medium {{ $message['user_role'] === 'admin' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400' }}">
+                                            <span class="text-xs font-medium {{ $message['user_role'] === 'admin' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400' }} truncate">
                                                 {{ $message['user_name'] }}
                                             </span>
-                                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full">
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full hidden sm:inline">
                                                 {{ ucfirst($message['user_role']) }}
                                             </span>
                                         </div>
                                     @endif
-                                    <div class="px-4 py-3 rounded-2xl shadow-sm {{ $message['is_own_message'] 
+                                    <div class="px-3 py-2.5 sm:px-4 sm:py-3 rounded-2xl shadow-sm {{ $message['is_own_message'] 
                                         ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md' 
                                         : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-bl-md' }}">
                                         <div class="text-sm leading-relaxed whitespace-pre-wrap">{{ $message['message'] }}</div>
@@ -484,27 +539,27 @@
                     @endif
                 </div>
 
-                {{-- Chat Input --}}
-                <div class="p-6 border-t border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-b-xl">
-                    <form wire:submit="sendMessage" class="flex gap-3">
+                {{-- Mobile-Optimized Chat Input --}}
+                <div class="p-3 sm:p-6 border-t border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-b-2xl sm:rounded-b-xl">
+                    <form wire:submit="sendMessage" class="flex gap-2 sm:gap-3">
                         <div class="flex-1 relative">
                             <input type="text" 
                                    wire:model="newMessage"
                                    placeholder="Type your message..." 
-                                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pr-12"
+                                   class="w-full px-3 py-3 sm:px-4 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pr-10 text-sm sm:text-base"
                                    required>
                             <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                 </svg>
                             </div>
                         </div>
                         <button type="submit" 
-                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center gap-2 font-medium">
+                                class="px-4 py-3 sm:px-6 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center gap-2 font-medium flex-shrink-0">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                             </svg>
-                            Send
+                            <span class="hidden sm:inline">Send</span>
                         </button>
                     </form>
                 </div>
@@ -648,7 +703,7 @@
         </div>
     @endif
 
-    {{-- Styles --}}
+    {{-- Mobile-Optimized Styles --}}
     <style>
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(10px); }
@@ -659,8 +714,15 @@
             animation: fade-in 0.3s ease-out;
         }
         
+        /* Mobile-first scrollbar styling */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
+        }
+        
+        @media (min-width: 640px) {
+            ::-webkit-scrollbar {
+                width: 6px;
+            }
         }
         
         ::-webkit-scrollbar-track {
@@ -674,6 +736,58 @@
         
         .dark ::-webkit-scrollbar-thumb {
             background: #4b5563;
+        }
+        
+        /* Prevent horizontal scroll on mobile */
+        body {
+            overflow-x: hidden;
+        }
+        
+        /* Touch-friendly tap targets */
+        @media (max-width: 640px) {
+            button, a, input, select {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Prevent zoom on input focus on iOS */
+            input, select, textarea {
+                font-size: 16px;
+            }
+        }
+        
+        /* Better text readability on mobile */
+        @media (max-width: 640px) {
+            .text-xs {
+                font-size: 0.75rem;
+                line-height: 1.2;
+            }
+            
+            .text-sm {
+                font-size: 0.875rem;
+                line-height: 1.4;
+            }
+        }
+        
+        /* Smooth scrolling for job list */
+        .space-y-3 > *, .space-y-4 > * {
+            scroll-margin-top: 1rem;
+        }
+        
+        /* Enhanced mobile modal */
+        @media (max-width: 640px) {
+            .fixed.inset-0 {
+                padding: 0;
+            }
+            
+            .rounded-t-2xl {
+                border-radius: 1rem 1rem 0 0;
+            }
+            
+            /* Make modals feel more native on mobile */
+            .bg-black\/60 {
+                backdrop-filter: blur(8px);
+            }
         }
     </style>
 </div>
