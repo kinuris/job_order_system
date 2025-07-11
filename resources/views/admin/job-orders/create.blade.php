@@ -154,24 +154,7 @@
                     </p>
                 </div>
 
-                {{-- Scheduled Date/Time (Optional) --}}
-                <div>
-                    <label for="scheduled_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Scheduled Date & Time (Optional)
-                    </label>
-                    <input type="datetime-local" 
-                           id="scheduled_at" 
-                           name="scheduled_at" 
-                           value="{{ old('scheduled_at') }}"
-                           min="{{ now()->format('Y-m-d\TH:i') }}"
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('scheduled_at') border-red-500 @enderror">
-                    @error('scheduled_at')
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                    @enderror
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Leave blank to schedule later.
-                    </p>
-                </div>
+
 
                 {{-- Description --}}
                 <div>

@@ -144,4 +144,40 @@ class JobOrder extends Model
     {
         return $this->status === 'cancelled';
     }
+
+    /**
+     * Get the number of days this job order is late.
+     * Returns 0 if not late, or positive number if late.
+     */
+    public function getDaysLate(): int
+    {
+        // Only calculate for non-completed/non-cancelled job orders
+        if ($this->isCompleted() || $this->isCancelled()) {
+            return 0;
+        }
+
+        // If no scheduled date, not late
+        if (!$this->scheduled_at) {
+            return 0;
+        }
+
+        // Calculate days difference from scheduled date to today
+        $scheduledDate = $this->scheduled_at->startOfDay();
+        $today = now()->startOfDay();
+        
+        // If today is after the scheduled date, it's late
+        if ($today->gt($scheduledDate)) {
+            return $scheduledDate->diffInDays($today);
+        }
+        
+        return 0;
+    }
+
+    /**
+     * Check if the job order is late.
+     */
+    public function isLate(): bool
+    {
+        return $this->getDaysLate() > 0;
+    }
 }

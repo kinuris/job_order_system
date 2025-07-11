@@ -51,16 +51,16 @@ class JobOrderController extends Controller
             'type' => 'required|in:' . implode(',', array_keys(JobOrder::TYPES)),
             'priority' => 'required|in:' . implode(',', array_keys(JobOrder::PRIORITIES)),
             'description' => 'required|string|max:2000',
-            'scheduled_at' => 'nullable|date|after:now',
         ]);
 
-        // Set default status
+        // Set default status and automatically schedule for today
         $validated['status'] = 'pending_dispatch';
+        $validated['scheduled_at'] = now()->startOfDay()->addHours(8); // Schedule for 8 AM today
 
         $jobOrder = JobOrder::create($validated);
 
         return redirect()->route('admin.job-orders.show', $jobOrder)
-            ->with('success', 'Job order created successfully.');
+            ->with('success', 'Job order created successfully and scheduled for today.');
     }
 
     /**

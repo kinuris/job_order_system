@@ -80,13 +80,21 @@ class Dashboard extends Component
                 'completed_today' => $assignedJobs->clone()->where('status', 'completed')->whereDate('completed_at', today())->count(),
             ];
 
+            // Get jobs scheduled for today OR late jobs (past scheduled date and not completed/cancelled)
             $this->my_job_orders = $assignedJobs->clone()
                 ->with(['customer', 'technician.user'])
-                ->whereDate('scheduled_at', today())
-                ->orWhere(function($query) use ($technician) {
-                    $query->where('technician_id', $technician->id)
-                          ->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold']);
+                ->where(function($query) {
+                    $query->whereDate('scheduled_at', today())
+                          ->orWhere(function($subQuery) {
+                              $subQuery->where('scheduled_at', '<', now()->startOfDay())
+                                       ->whereNotIn('status', ['completed', 'cancelled']);
+                          });
                 })
+                ->whereIn('status', ['pending_dispatch', 'scheduled', 'in_progress', 'on_hold'])
+                ->orderByRaw("CASE 
+                    WHEN scheduled_at < ? THEN 0 
+                    ELSE 1 
+                END ASC", [now()->startOfDay()])
                 ->orderBy('scheduled_at', 'asc')
                 ->get();
         } else {

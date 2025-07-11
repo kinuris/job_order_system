@@ -93,11 +93,12 @@
         {{-- Recent Activity --}}
         <div class="grid gap-6 md:grid-cols-2">
             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Today's Job Orders</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Job Orders</h3>
                 @if($recent_job_orders && $recent_job_orders->count() > 0)
                     <div class="space-y-3">
                         @foreach($recent_job_orders as $job)
-                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg
+                                {{ $job->isLate() ? 'border-l-4 border-red-500 bg-red-50 dark:bg-red-900/10' : '' }}">
                                 <div>
                                     <div class="flex items-center gap-2 mb-1">
                                         <p class="font-medium text-gray-900 dark:text-gray-100">#{{ $job->id }} - {{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
@@ -108,6 +109,11 @@
                                             @else bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 @endif">
                                             {{ ucfirst($job->priority) }}
                                         </span>
+                                        @if($job->isLate())
+                                            <span class="px-2 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                                {{ $job->getDaysLate() }} {{ $job->getDaysLate() == 1 ? 'day' : 'days' }} overdue
+                                            </span>
+                                        @endif
                                     </div>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ ucfirst(str_replace('_', ' ', $job->status)) }}</p>
                                 </div>
@@ -190,15 +196,23 @@
 
         {{-- My Job Orders --}}
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Today's Assigned Jobs</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Assigned Jobs</h3>
             @if($my_job_orders && $my_job_orders->count() > 0)
                 <div class="space-y-4">
                     @foreach($my_job_orders as $job)
-                        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+                        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50 
+                            {{ $job->isLate() ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/10' : '' }}">
                             {{-- Job Header --}}
                             <div class="flex items-center justify-between mb-3">
                                 <div>
-                                    <h4 class="font-medium text-gray-900 dark:text-gray-100">Job #{{ $job->id }}</h4>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h4 class="font-medium text-gray-900 dark:text-gray-100">Job #{{ $job->id }}</h4>
+                                        @if($job->isLate())
+                                            <span class="px-2 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 animate-pulse">
+                                                {{ $job->getDaysLate() }} {{ $job->getDaysLate() == 1 ? 'DAY' : 'DAYS' }} LATE
+                                            </span>
+                                        @endif
+                                    </div>
                                     <div class="flex items-center gap-2 mb-1">
                                         <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->customer->first_name }} {{ $job->customer->last_name }}</p>
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full 
@@ -235,7 +249,14 @@
                                         {{ ucfirst(str_replace('_', ' ', $job->status)) }}
                                     </span>
                                     @if($job->scheduled_at)
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $job->scheduled_at->format('M d, H:i') }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            Scheduled: {{ $job->scheduled_at->format('M d, Y') }}
+                                            @if($job->isLate())
+                                                <span class="text-red-600 dark:text-red-400 font-medium">(OVERDUE)</span>
+                                            @elseif($job->scheduled_at->isToday())
+                                                <span class="text-blue-600 dark:text-blue-400 font-medium">(TODAY)</span>
+                                            @endif
+                                        </p>
                                     @endif
                                 </div>
                             </div>
@@ -249,7 +270,7 @@
                     @endforeach
                 </div>
             @else
-                <p class="text-gray-500 dark:text-gray-400">No assigned jobs for today.</p>
+                <p class="text-gray-500 dark:text-gray-400">No assigned jobs.</p>
             @endif
         </div>
 
