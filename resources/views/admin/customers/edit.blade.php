@@ -68,14 +68,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Email Address <span class="text-red-500">*</span>
+                            Email Address
                         </label>
                         <input type="email" 
                                id="email" 
                                name="email" 
                                value="{{ old('email', $customer->email) }}"
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-500 @enderror"
-                               required>
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-500 @enderror">
                         @error('email')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -83,15 +82,14 @@
 
                     <div>
                         <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Phone Number <span class="text-red-500">*</span>
+                            Phone Number
                         </label>
                         <input type="tel" 
                                id="phone_number" 
                                name="phone_number" 
                                value="{{ old('phone_number', $customer->phone_number) }}"
                                placeholder="+1-555-123-4567"
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('phone_number') border-red-500 @enderror"
-                               required>
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('phone_number') border-red-500 @enderror">
                         @error('phone_number')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror

@@ -65,7 +65,12 @@
                                         @if($customer->email)
                                             <p class="text-sm text-gray-600 dark:text-gray-300 mb-1">{{ $customer->email }}</p>
                                         @endif
-                                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ $customer->phone_number }}</p>
+                                        @if($customer->phone_number)
+                                            <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ $customer->phone_number }}</p>
+                                        @endif
+                                        @if(!$customer->email && !$customer->phone_number)
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 italic mb-2">No contact info</p>
+                                        @endif
                                         <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ $customer->service_address }}</p>
                                     </div>
                                     
@@ -137,9 +142,16 @@
                                                         {{ $customer->email }}
                                                     </div>
                                                 @endif
-                                                <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                    {{ $customer->phone_number }}
-                                                </div>
+                                                @if($customer->phone_number)
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ $customer->phone_number }}
+                                                    </div>
+                                                @endif
+                                                @if(!$customer->email && !$customer->phone_number)
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400 italic">
+                                                        No contact info
+                                                    </div>
+                                                @endif
                                             </div>
                                         </td>
                                         <td class="px-6 py-4">

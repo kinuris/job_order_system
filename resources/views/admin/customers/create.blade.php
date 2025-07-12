@@ -57,14 +57,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Email Address <span class="text-red-500">*</span>
+                            Email Address
                         </label>
                         <input type="email" 
                                id="email" 
                                name="email" 
                                value="{{ old('email') }}"
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-500 @enderror"
-                               required>
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('email') border-red-500 @enderror">
                         @error('email')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -72,15 +71,14 @@
 
                     <div>
                         <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Phone Number <span class="text-red-500">*</span>
+                            Phone Number
                         </label>
                         <input type="tel" 
                                id="phone_number" 
                                name="phone_number" 
                                value="{{ old('phone_number') }}"
                                placeholder="+1-555-123-4567"
-                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('phone_number') border-red-500 @enderror"
-                               required>
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('phone_number') border-red-500 @enderror">
                         @error('phone_number')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -135,8 +133,8 @@
                     <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Tips for adding customers</h3>
                     <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
                         <ul class="list-disc list-inside space-y-1">
-                            <li>Ensure email addresses are unique - each customer needs a different email</li>
-                            <li>Include area code in phone numbers for better contact management</li>
+                            <li>Email addresses are optional but must be unique if provided</li>
+                            <li>Phone numbers are optional but recommended for better communication</li>
                             <li>Be specific with service addresses to help technicians locate the site</li>
                             <li>Double-check all information before saving - this will be used for job orders</li>
                         </ul>
