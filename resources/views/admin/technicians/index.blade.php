@@ -17,17 +17,19 @@
         </div>
 
         {{-- Search Bar - Mobile Optimized --}}
-        <div class="relative">
+        <form method="GET" action="{{ route('admin.technicians.index') }}" class="relative">
             <input 
                 type="text" 
+                name="search"
                 placeholder="Search technicians by name or username..." 
+                value="{{ request('search') }}"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 id="technician-search"
             >
             <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
-        </div>
+        </form>
 
         {{-- Success/Error Messages --}}
         @if(session('success'))
@@ -39,6 +41,21 @@
         @if(session('error'))
             <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
                 {{ session('error') }}
+            </div>
+        @endif
+
+        {{-- Search Results Info --}}
+        @if(request('search'))
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <span>
+                        Showing results for: <strong>"{{ request('search') }}"</strong> 
+                        ({{ $technicians->total() }} {{ Str::plural('result', $technicians->total()) }})
+                    </span>
+                    <a href="{{ route('admin.technicians.index') }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 underline">
+                        Clear search
+                    </a>
+                </div>
             </div>
         @endif
 
@@ -179,7 +196,7 @@
                 {{-- Pagination --}}
                 @if($technicians->hasPages())
                     <div class="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                        {{ $technicians->links() }}
+                        {{ $technicians->appends(request()->query())->links() }}
                     </div>
                 @endif
             @else
@@ -208,21 +225,30 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('technician-search');
+            const searchForm = searchInput.closest('form');
             let searchTimeout;
 
+            // Handle live search with debouncing
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
                 const query = this.value.trim();
 
                 searchTimeout = setTimeout(() => {
                     if (query.length >= 2) {
-                        // Implement search functionality here if needed
-                        // For now, we'll use simple page refresh with query parameter
-                        window.location.href = `{{ route('admin.technicians.index') }}?search=${encodeURIComponent(query)}`;
+                        searchForm.submit();
                     } else if (query.length === 0) {
                         window.location.href = `{{ route('admin.technicians.index') }}`;
                     }
                 }, 500);
+            });
+
+            // Handle form submission (Enter key)
+            searchForm.addEventListener('submit', function(e) {
+                const query = searchInput.value.trim();
+                if (query.length === 0) {
+                    e.preventDefault();
+                    window.location.href = `{{ route('admin.technicians.index') }}`;
+                }
             });
         });
     </script>

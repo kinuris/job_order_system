@@ -18,9 +18,23 @@ class CustomerController extends Controller
     /**
      * Display a listing of customers.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $customers = Customer::with('jobOrders')->paginate(15);
+        $query = Customer::with('jobOrders');
+        
+        // Handle search
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('first_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('last_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('email', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+        
+        $customers = $query->paginate(15);
+        
         return view('admin.customers.index', compact('customers'));
     }
 
