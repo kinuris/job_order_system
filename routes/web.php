@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\JobOrderController;
+use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TechnicianJobOrderController;
@@ -35,6 +36,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Customer management routes
     Route::resource('customers', CustomerController::class);
     Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
+    
+    // Technician management routes
+    Route::resource('technicians', TechnicianController::class);
+    Route::get('technicians/search', [TechnicianController::class, 'search'])->name('technicians.search');
     
     // Job order management routes
     Route::resource('job-orders', JobOrderController::class);
