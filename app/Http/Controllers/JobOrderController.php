@@ -6,6 +6,7 @@ use App\Models\JobOrder;
 use App\Models\Customer;
 use App\Models\Technician;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class JobOrderController extends Controller
 {
@@ -22,9 +23,14 @@ class JobOrderController extends Controller
      */
     public function index()
     {
+        $currentUserId = Auth::id();
+        
         $jobOrders = JobOrder::with(['customer', 'technician'])
+            ->withCount(['unreadMessages as unread_messages_count' => function ($query) use ($currentUserId) {
+                $query->where('user_id', '!=', $currentUserId);
+            }])
             ->orderBy('created_at', 'desc')
-            ->paginate(8);
+            ->paginate(15);
         
         return view('admin.job-orders.index', compact('jobOrders'));
     }

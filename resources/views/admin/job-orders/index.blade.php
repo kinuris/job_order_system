@@ -152,6 +152,18 @@
                                             </svg>
                                             <span class="hidden sm:inline">View</span>
                                         </a>
+                                        <button onclick="openChatModal({{ $jobOrder->id }})"
+                                                class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors min-h-[36px] flex items-center relative">
+                                            @if($jobOrder->unread_messages_count > 0)
+                                                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                                                    {{ $jobOrder->unread_messages_count > 9 ? '9+' : $jobOrder->unread_messages_count }}
+                                                </span>
+                                            @endif
+                                            <svg class="w-4 h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.98L3 20l1.98-5.874A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z"></path>
+                                            </svg>
+                                            <span class="hidden sm:inline">Chat</span>
+                                        </button>
                                         <a href="{{ route('admin.job-orders.edit', $jobOrder) }}" 
                                            class="px-3 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors min-h-[36px] flex items-center">
                                             <svg class="w-4 h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,7 +217,7 @@
                                 {{-- Customer Contact Info --}}
                                 <div class="flex items-start gap-2">
                                     <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 018 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
                                     </svg>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $jobOrder->customer->email }}</p>
                                 </div>
@@ -290,6 +302,69 @@
         </div>
     </div>
 
+    {{-- Enhanced Chat Modal - Dashboard Style --}}
+    <div id="chatModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-all duration-300 hidden">
+        <div class="flex items-end sm:items-center justify-center min-h-screen p-2 sm:p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-3xl h-[85vh] sm:h-[32rem] flex flex-col border border-gray-200 dark:border-gray-600 transform transition-all duration-300">
+                
+                {{-- Enhanced Chat Header --}}
+                <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 rounded-t-2xl sm:rounded-t-xl">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a9.863 9.863 0 01-4.906-1.287A3 3 0 014 19h1a8 8 0 016-7.265M17 12a8 8 0 00-8-8 8 8 0 00-8 8"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                Job Order #<span id="chatJobId">-</span> Chat
+                            </h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:block">Real-time communication</p>
+                        </div>
+                    </div>
+                    <button onclick="closeChatModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex-shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Enhanced Messages Container --}}
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 bg-gray-50 dark:bg-gray-900/50">
+                    <div class="flex justify-center items-center h-full">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                </div>
+
+                {{-- Enhanced Message Input --}}
+                <div class="p-3 sm:p-6 border-t border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-b-2xl sm:rounded-b-xl">
+                    <div class="flex gap-2 sm:gap-3">
+                        <div class="flex-1 relative">
+                            <input type="text" 
+                                   id="messageInput" 
+                                   placeholder="Type your message..." 
+                                   class="w-full px-3 py-3 sm:px-4 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 pr-10 text-sm sm:text-base"
+                                   onkeypress="handleMessageKeyPress(event)"
+                                   required>
+                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <button onclick="sendMessage()" 
+                                class="px-4 py-3 sm:px-6 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center gap-2 font-medium flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                            <span class="hidden sm:inline">Send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Mobile-Optimized Styles --}}
     <style>
         /* Touch-friendly tap targets */
@@ -321,6 +396,91 @@
         /* Smooth scrolling for job list */
         .space-y-3 > *, .space-y-4 > * {
             scroll-margin-top: 1rem;
+        }
+
+        /* Enhanced Chat Modal Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal backdrop animation */
+        #chatModal {
+            animation: modalBackdropFadeIn 0.3s ease-out;
+        }
+
+        #chatModal.hidden {
+            animation: modalBackdropFadeOut 0.3s ease-out;
+        }
+
+        @keyframes modalBackdropFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes modalBackdropFadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Message container smooth scrolling */
+        #chatMessages {
+            scroll-behavior: smooth;
+        }
+
+        /* Enhanced focus states for accessibility */
+        .focus\:ring-blue-500:focus {
+            --tw-ring-color: rgb(59 130 246 / 0.5);
+        }
+
+        /* Hover effects for better interaction feedback */
+        .hover\:scale-105:hover {
+            transform: scale(1.05);
+        }
+
+        /* Custom scrollbar for chat messages */
+        #chatMessages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chatMessages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chatMessages::-webkit-scrollbar-thumb {
+            background: rgb(156 163 175 / 0.5);
+            border-radius: 3px;
+        }
+
+        #chatMessages::-webkit-scrollbar-thumb:hover {
+            background: rgb(156 163 175 / 0.7);
+        }
+
+        /* Dark mode scrollbar */
+        .dark #chatMessages::-webkit-scrollbar-thumb {
+            background: rgb(75 85 99 / 0.5);
+        }
+
+        .dark #chatMessages::-webkit-scrollbar-thumb:hover {
+            background: rgb(75 85 99 / 0.7);
         }
     </style>
 
@@ -531,6 +691,290 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             applyFilters();
+        });
+
+        // Chat functionality
+        let currentChatJobId = null;
+        let chatRefreshInterval = null;
+
+        function openChatModal(jobId) {
+            currentChatJobId = jobId;
+            document.getElementById('chatJobId').textContent = jobId;
+            
+            const modal = document.getElementById('chatModal');
+            modal.classList.remove('hidden');
+            
+            // Trigger reflow to ensure the transition works
+            modal.offsetHeight;
+            
+            document.getElementById('messageInput').value = '';
+            
+            // Load messages
+            loadChatMessages();
+            
+            // Start auto-refresh (every 3 seconds)
+            if (chatRefreshInterval) {
+                clearInterval(chatRefreshInterval);
+            }
+            chatRefreshInterval = setInterval(loadChatMessages, 3000);
+            
+            // Focus message input with slight delay for better UX
+            setTimeout(() => {
+                document.getElementById('messageInput').focus();
+            }, 300);
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeChatModal() {
+            const modal = document.getElementById('chatModal');
+            const jobId = currentChatJobId;
+            
+            // Add closing animation class
+            modal.style.animation = 'modalBackdropFadeOut 0.3s ease-out';
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.style.animation = '';
+                currentChatJobId = null;
+                
+                // Restore body scroll
+                document.body.style.overflow = '';
+                
+                // Clear auto-refresh
+                if (chatRefreshInterval) {
+                    clearInterval(chatRefreshInterval);
+                    chatRefreshInterval = null;
+                }
+                
+                // Update the unread message badge for this job order
+                if (jobId) {
+                    updateUnreadBadge(jobId);
+                }
+            }, 300);
+        }
+
+        function updateUnreadBadge(jobId) {
+            // Find the chat button for this job and remove its badge since we just read the messages
+            const chatButtons = document.querySelectorAll(`button[onclick="openChatModal(${jobId})"]`);
+            chatButtons.forEach(button => {
+                const badge = button.querySelector('.absolute');
+                if (badge) {
+                    badge.remove();
+                }
+            });
+        }
+
+        function loadChatMessages() {
+            if (!currentChatJobId) return;
+
+            fetch(`/job-orders/${currentChatJobId}/messages`)
+                .then(response => response.json())
+                .then(messages => {
+                    const container = document.getElementById('chatMessages');
+                    
+                    if (messages.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-8 sm:py-12">
+                                <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                                    <svg class="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a9.863 9.863 0 01-4.906-1.287A3 3 0 014 19h1a8 8 0 016-7.265M17 12a8 8 0 00-8-8 8 8 0 00-8 8"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-gray-500 dark:text-gray-400 text-base sm:text-lg">No messages yet</p>
+                                <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">Start the conversation!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    container.innerHTML = messages.map(message => {
+                        const isOwnMessage = message.is_own_message;
+                        const userRole = message.user_role;
+                        const userName = message.user_name;
+                        const userInitial = userName.charAt(0).toUpperCase();
+                        
+                        const isAdmin = userRole === 'admin';
+                        const roleColorClass = isAdmin 
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                            : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400';
+                        
+                        const userNameColorClass = isAdmin 
+                            ? 'text-blue-600 dark:text-blue-400' 
+                            : 'text-green-600 dark:text-green-400';
+                        
+                        return `
+                            <div class="flex ${isOwnMessage ? 'justify-end' : 'justify-start'} animate-fade-in">
+                                <div class="max-w-[85%] sm:max-w-sm lg:max-w-md">
+                                    ${!isOwnMessage ? `
+                                        <div class="flex items-center mb-1 ml-1">
+                                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full ${roleColorClass} flex items-center justify-center mr-2">
+                                                <span class="text-xs font-semibold">
+                                                    ${userInitial}
+                                                </span>
+                                            </div>
+                                            <span class="text-xs font-medium ${userNameColorClass} truncate">
+                                                ${escapeHtml(userName)}
+                                            </span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full hidden sm:inline">
+                                                ${userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                    <div class="px-3 py-2.5 sm:px-4 sm:py-3 rounded-2xl shadow-sm ${isOwnMessage 
+                                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md' 
+                                        : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-bl-md'}">
+                                        <div class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(message.message)}</div>
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 ${isOwnMessage ? 'text-right mr-1' : 'ml-1'}">
+                                        ${message.created_at}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Mark messages as read
+                    markMessagesAsRead();
+                    
+                    // Scroll to bottom with smooth animation
+                    setTimeout(() => {
+                        container.scrollTop = container.scrollHeight;
+                    }, 100);
+                })
+                .catch(error => {
+                    console.error('Error loading messages:', error);
+                    const container = document.getElementById('chatMessages');
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-red-500 text-sm">Error loading messages. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !currentChatJobId) return;
+
+            // Get the send button for loading state
+            const sendButton = input.parentElement.parentElement.querySelector('button[onclick="sendMessage()"]');
+            const originalButtonContent = sendButton.innerHTML;
+            
+            // Disable input and show loading state
+            input.disabled = true;
+            sendButton.disabled = true;
+            sendButton.innerHTML = `
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span class="hidden sm:inline">Sending...</span>
+            `;
+            
+            fetch(`/job-orders/${currentChatJobId}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    // Show error with better styling
+                    showToast('Error sending message: ' + data.error, 'error');
+                    return;
+                }
+                
+                input.value = '';
+                loadChatMessages();
+                
+                // Show success feedback
+                showToast('Message sent!', 'success');
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                showToast('Error sending message. Please try again.', 'error');
+            })
+            .finally(() => {
+                input.disabled = false;
+                sendButton.disabled = false;
+                sendButton.innerHTML = originalButtonContent;
+                input.focus();
+            });
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-[60] px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        function markMessagesAsRead() {
+            if (!currentChatJobId) return;
+
+            fetch(`/job-orders/${currentChatJobId}/messages/mark-read`, {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).catch(error => {
+                console.error('Error marking messages as read:', error);
+            });
+        }
+
+        function handleMessageKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('chatModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeChatModal();
+            }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && !document.getElementById('chatModal').classList.contains('hidden')) {
+                closeChatModal();
+            }
         });
     </script>
 </x-layouts.app>
