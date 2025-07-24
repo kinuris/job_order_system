@@ -118,10 +118,10 @@ class JobOrderController extends Controller
      */
     public function destroy(JobOrder $jobOrder)
     {
-        // Only allow deletion of pending or cancelled job orders
-        if (!in_array($jobOrder->status, ['pending_dispatch', 'cancelled'])) {
+        // Only allow deletion of pending, cancelled, or completed job orders
+        if (!in_array($jobOrder->status, ['pending_dispatch', 'cancelled', 'completed'])) {
             return redirect()->route('admin.job-orders.index')
-                ->with('error', 'Only pending or cancelled job orders can be deleted.');
+                ->with('error', 'Only pending, cancelled, or completed job orders can be deleted.');
         }
 
         $jobOrder->delete();

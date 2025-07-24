@@ -171,7 +171,7 @@
                                             </svg>
                                             <span class="hidden sm:inline">Edit</span>
                                         </a>
-                                        @if(in_array($jobOrder->status, ['pending_dispatch', 'cancelled']))
+                                        @if(in_array($jobOrder->status, ['pending_dispatch', 'cancelled', 'completed']))
                                             <form method="POST" action="{{ route('admin.job-orders.destroy', $jobOrder) }}" 
                                                   class="inline"
                                                   onsubmit="return confirm('Are you sure you want to delete this job order?')">
