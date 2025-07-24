@@ -66,6 +66,65 @@
                             <p class="mt-1 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ $customer->service_address }}</p>
                         </div>
 
+                        {{-- Plan Information --}}
+                        @if($customer->plan)
+                            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Service Plan</label>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ $customer->plan->name }}</h4>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            @if($customer->plan_status === 'active') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                            @elseif($customer->plan_status === 'suspended') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                            @else bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 @endif">
+                                            {{ $customer->getPlanStatusLabel() }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span class="text-gray-600 dark:text-gray-400">Type:</span>
+                                            <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">{{ $customer->plan->getTypeLabel() }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-600 dark:text-gray-400">Monthly Rate:</span>
+                                            <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">{{ $customer->plan->formatted_monthly_rate }}</span>
+                                        </div>
+                                        @if($customer->plan->speed_mbps)
+                                            <div>
+                                                <span class="text-gray-600 dark:text-gray-400">Speed:</span>
+                                                <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">{{ $customer->plan->speed_mbps }} Mbps</span>
+                                            </div>
+                                        @endif
+                                        @if($customer->plan_installed_at)
+                                            <div>
+                                                <span class="text-gray-600 dark:text-gray-400">Installed:</span>
+                                                <span class="ml-1 font-medium text-gray-900 dark:text-gray-100">{{ $customer->plan_installed_at->format('M d, Y') }}</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    @if($customer->plan->description)
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">{{ $customer->plan->description }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                        @else
+                            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Service Plan</label>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+                                    <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">No service plan assigned</p>
+                                    <a href="{{ route('admin.customers.edit', $customer) }}" 
+                                       class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+                                        Assign a plan →
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
                             <div class="grid grid-cols-2 gap-4 text-center">
                                 <div>

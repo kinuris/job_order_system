@@ -13,5 +13,8 @@ class DatabaseSeeder extends Seeder
     {
         // Call the AdminUserSeeder which will clear all data and create only 1 admin and 1 technician
         $this->call(AdminUserSeeder::class);
+        
+        // Seed plans
+        $this->call(PlanSeeder::class);
     }
 }

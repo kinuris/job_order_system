@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -20,7 +21,7 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Customer::with('jobOrders');
+        $query = Customer::with(['jobOrders', 'plan']);
         
         // Handle search
         if ($request->has('search') && !empty($request->search)) {
@@ -43,7 +44,8 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        return view('admin.customers.create');
+        $plans = Plan::active()->orderBy('name')->get();
+        return view('admin.customers.create', compact('plans'));
     }
 
     /**
@@ -57,7 +59,15 @@ class CustomerController extends Controller
             'email' => 'nullable|email|unique:customers,email',
             'phone_number' => 'nullable|string|max:20',
             'service_address' => 'required|string|max:1000',
+            'plan_id' => 'nullable|exists:plans,id',
+            'plan_installed_at' => 'nullable|date',
+            'plan_status' => 'required_with:plan_id|in:' . implode(',', array_keys(Customer::PLAN_STATUSES)),
         ]);
+
+        // Set default plan status if plan is selected
+        if ($validated['plan_id'] && !$validated['plan_status']) {
+            $validated['plan_status'] = 'active';
+        }
 
         $customer = Customer::create($validated);
 
@@ -70,7 +80,7 @@ class CustomerController extends Controller
      */
     public function show(Customer $customer)
     {
-        $customer->load('jobOrders.technician');
+        $customer->load(['jobOrders.technician', 'plan']);
         return view('admin.customers.show', compact('customer'));
     }
 
@@ -79,7 +89,8 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        return view('admin.customers.edit', compact('customer'));
+        $plans = Plan::active()->orderBy('name')->get();
+        return view('admin.customers.edit', compact('customer', 'plans'));
     }
 
     /**
@@ -93,7 +104,15 @@ class CustomerController extends Controller
             'email' => 'nullable|email|unique:customers,email,' . $customer->id,
             'phone_number' => 'nullable|string|max:20',
             'service_address' => 'required|string|max:1000',
+            'plan_id' => 'nullable|exists:plans,id',
+            'plan_installed_at' => 'nullable|date',
+            'plan_status' => 'required_with:plan_id|in:' . implode(',', array_keys(Customer::PLAN_STATUSES)),
         ]);
+
+        // Set default plan status if plan is selected
+        if ($validated['plan_id'] && !$validated['plan_status']) {
+            $validated['plan_status'] = 'active';
+        }
 
         $customer->update($validated);
 

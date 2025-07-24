@@ -19,6 +19,7 @@
                 @if(auth()->user()->isAdmin())
                 <flux:navlist.group :heading="__('Admin')" class="grid">
                     <flux:navlist.item icon="users" :href="route('admin.customers.index')" :current="request()->routeIs('admin.customers.*')" wire:navigate>{{ __('Customers') }}</flux:navlist.item>
+                    <flux:navlist.item icon="document-text" :href="route('admin.plans.index')" :current="request()->routeIs('admin.plans.*')" wire:navigate>{{ __('Plans') }}</flux:navlist.item>
                     <flux:navlist.item icon="wrench-screwdriver" :href="route('admin.technicians.index')" :current="request()->routeIs('admin.technicians.*')" wire:navigate>{{ __('Technicians') }}</flux:navlist.item>
                     <flux:navlist.item icon="clipboard-document-list" :href="route('admin.job-orders.index')" :current="request()->routeIs('admin.job-orders.*')" wire:navigate>{{ __('Job Orders') }}</flux:navlist.item>
                 </flux:navlist.group>

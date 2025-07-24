@@ -115,6 +115,73 @@
                     </p>
                 </div>
 
+                {{-- Plan Information --}}
+                <div class="space-y-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Plan Information</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="plan_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Service Plan
+                            </label>
+                            <select id="plan_id" 
+                                    name="plan_id"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('plan_id') border-red-500 @enderror">
+                                <option value="">No Plan Selected</option>
+                                @foreach($plans as $plan)
+                                    <option value="{{ $plan->id }}" 
+                                            {{ old('plan_id', $customer->plan_id) == $plan->id ? 'selected' : '' }}
+                                            data-type="{{ $plan->type }}"
+                                            data-rate="{{ $plan->formatted_monthly_rate }}">
+                                        {{ $plan->name }} - {{ $plan->formatted_monthly_rate }}/month
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('plan_id')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="plan_installed_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Installation Date
+                            </label>
+                            <input type="date" 
+                                   id="plan_installed_at" 
+                                   name="plan_installed_at" 
+                                   value="{{ old('plan_installed_at', $customer->plan_installed_at ? $customer->plan_installed_at->format('Y-m-d') : '') }}"
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('plan_installed_at') border-red-500 @enderror">
+                            @error('plan_installed_at')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="plan_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Plan Status
+                            </label>
+                            <select id="plan_status" 
+                                    name="plan_status"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('plan_status') border-red-500 @enderror">
+                                <option value="">Select Status</option>
+                                @foreach(\App\Models\Customer::PLAN_STATUSES as $key => $label)
+                                    <option value="{{ $key }}" {{ old('plan_status', $customer->plan_status) == $key ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('plan_status')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div id="plan-details" class="hidden p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md">
+                        <h4 class="font-medium text-blue-900 dark:text-blue-100 mb-2">Plan Details</h4>
+                        <div id="plan-info" class="text-sm text-blue-800 dark:text-blue-200"></div>
+                    </div>
+                </div>
+
                 {{-- Form Actions --}}
                 <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
                     <div>
@@ -178,4 +245,49 @@
             </div>
         </div>
     </div>
+
+    {{-- JavaScript for plan selection --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const planSelect = document.getElementById('plan_id');
+            const planDetails = document.getElementById('plan-details');
+            const planInfo = document.getElementById('plan-info');
+            const planStatusSelect = document.getElementById('plan_status');
+            const planInstalledAt = document.getElementById('plan_installed_at');
+
+            function updatePlanDetails() {
+                const selectedOption = planSelect.options[planSelect.selectedIndex];
+                
+                if (selectedOption.value) {
+                    const planType = selectedOption.dataset.type;
+                    const planRate = selectedOption.dataset.rate;
+                    
+                    planInfo.innerHTML = `
+                        <p><strong>Type:</strong> ${planType.charAt(0).toUpperCase() + planType.slice(1)}</p>
+                        <p><strong>Monthly Rate:</strong> ${planRate}</p>
+                    `;
+                    planDetails.classList.remove('hidden');
+                    
+                    // Auto-set plan status to active if not already set
+                    if (!planStatusSelect.value) {
+                        planStatusSelect.value = 'active';
+                    }
+                    
+                    // Auto-set installation date to today if not already set
+                    if (!planInstalledAt.value) {
+                        planInstalledAt.value = new Date().toISOString().split('T')[0];
+                    }
+                } else {
+                    planDetails.classList.add('hidden');
+                    planStatusSelect.value = '';
+                    planInstalledAt.value = '';
+                }
+            }
+
+            planSelect.addEventListener('change', updatePlanDetails);
+            
+            // Initialize on page load
+            updatePlanDetails();
+        });
+    </script>
 </x-layouts.app>

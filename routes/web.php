@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\JobOrderController;
+use App\Http\Controllers\PlanController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
@@ -36,6 +37,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Customer management routes
     Route::resource('customers', CustomerController::class);
     Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
+    
+    // Plan management routes
+    Route::resource('plans', PlanController::class);
     
     // Technician management routes
     Route::resource('technicians', TechnicianController::class);

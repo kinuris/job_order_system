@@ -88,6 +88,26 @@
                                         @if(!$customer->email && !$customer->phone_number)
                                             <p class="text-sm text-gray-500 dark:text-gray-400 italic mb-2">No contact info</p>
                                         @endif
+
+                                        {{-- Plan Info --}}
+                                        @if($customer->plan)
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                    {{ $customer->plan->name }}
+                                                </span>
+                                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ $customer->plan->formatted_monthly_rate }}
+                                                </span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium 
+                                                    @if($customer->plan_status === 'active') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                                    @elseif($customer->plan_status === 'inactive') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                                    @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @endif">
+                                                    {{ $customer->getPlanStatusLabel() }}
+                                                </span>
+                                            </div>
+                                        @else
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 italic mb-2">No plan assigned</p>
+                                        @endif
                                         <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{ $customer->service_address }}</p>
                                     </div>
                                     
@@ -129,6 +149,9 @@
                                         Contact
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Plan
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Service Address
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -167,6 +190,30 @@
                                                 @if(!$customer->email && !$customer->phone_number)
                                                     <div class="text-sm text-gray-500 dark:text-gray-400 italic">
                                                         No contact info
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                @if($customer->plan)
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                        {{ $customer->plan->name }}
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                                                            {{ $customer->plan->formatted_monthly_rate }}
+                                                        </span>
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium 
+                                                            @if($customer->plan_status === 'active') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                                            @elseif($customer->plan_status === 'inactive') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                                            @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @endif">
+                                                            {{ $customer->getPlanStatusLabel() }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400 italic">
+                                                        No plan
                                                     </div>
                                                 @endif
                                             </div>
