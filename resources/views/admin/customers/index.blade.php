@@ -16,20 +16,186 @@
             </a>
         </div>
 
-        {{-- Search Bar - Mobile Optimized --}}
-        <form method="GET" action="{{ route('admin.customers.index') }}" class="relative">
-            <input 
-                type="text" 
-                name="search"
-                placeholder="Search customers..." 
-                value="{{ request('search') }}"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                id="customer-search"
-            >
-            <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-        </form>
+        {{-- Search and Filters - Mobile Optimized --}}
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 lg:p-6 space-y-4">
+            <form method="GET" action="{{ route('admin.customers.index') }}" id="filter-form">
+                {{-- Search Bar --}}
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        name="search"
+                        placeholder="Search customers..." 
+                        value="{{ request('search') }}"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        id="customer-search"
+                    >
+                    <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+
+                {{-- Advanced Filters Toggleable Section --}}
+                <div x-data="{ showFilters: {{ request()->hasAny(['plan_filter', 'status_filter', 'plan_type_filter', 'date_from', 'date_to', 'sort_by', 'sort_direction']) ? 'true' : 'false' }} }" class="space-y-4">
+                    {{-- Toggle Button --}}
+                    <button type="button" @click="showFilters = !showFilters" 
+                            class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 font-medium">
+                        <svg x-show="!showFilters" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        <svg x-show="showFilters" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                        </svg>
+                        Advanced Filters
+                    </button>
+
+                    {{-- Filter Grid --}}
+                    <div x-show="showFilters" x-transition class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {{-- Plan Filter --}}
+                        <div>
+                            <label for="plan_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Plan
+                            </label>
+                            <select name="plan_filter" id="plan_filter" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    onchange="this.form.submit()">
+                                <option value="">All Plans</option>
+                                <option value="no_plan" {{ request('plan_filter') === 'no_plan' ? 'selected' : '' }}>No Plan</option>
+                                @foreach($plans as $plan)
+                                    <option value="{{ $plan->id }}" {{ request('plan_filter') == $plan->id ? 'selected' : '' }}>
+                                        {{ $plan->name }} ({{ $plan->formatted_monthly_rate }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Plan Status Filter --}}
+                        <div>
+                            <label for="status_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Plan Status
+                            </label>
+                            <select name="status_filter" id="status_filter" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    onchange="this.form.submit()">
+                                <option value="">All Statuses</option>
+                                @foreach($planStatuses as $status => $label)
+                                    <option value="{{ $status }}" {{ request('status_filter') === $status ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Plan Type Filter --}}
+                        <div>
+                            <label for="plan_type_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Plan Type
+                            </label>
+                            <select name="plan_type_filter" id="plan_type_filter" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    onchange="this.form.submit()">
+                                <option value="">All Types</option>
+                                @foreach($planTypes as $type)
+                                    <option value="{{ $type }}" {{ request('plan_type_filter') === $type ? 'selected' : '' }}>
+                                        {{ ucfirst($type) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Sort Options --}}
+                        <div>
+                            <label for="sort_by" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Sort By
+                            </label>
+                            <select name="sort_by" id="sort_by" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    onchange="this.form.submit()">
+                                <option value="created_at" {{ request('sort_by', 'created_at') === 'created_at' ? 'selected' : '' }}>Date Added</option>
+                                <option value="first_name" {{ request('sort_by') === 'first_name' ? 'selected' : '' }}>First Name</option>
+                                <option value="last_name" {{ request('sort_by') === 'last_name' ? 'selected' : '' }}>Last Name</option>
+                                <option value="email" {{ request('sort_by') === 'email' ? 'selected' : '' }}>Email</option>
+                                <option value="plan_installed_at" {{ request('sort_by') === 'plan_installed_at' ? 'selected' : '' }}>Installation Date</option>
+                            </select>
+                            <input type="hidden" name="sort_direction" value="{{ request('sort_direction', 'desc') }}">
+                        </div>
+
+                        {{-- Date Range Filters --}}
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Installation Date Range
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <input type="date" name="date_from" value="{{ request('date_from') }}"
+                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                           placeholder="From Date"
+                                           onchange="this.form.submit()">
+                                </div>
+                                <div>
+                                    <input type="date" name="date_to" value="{{ request('date_to') }}"
+                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                           placeholder="To Date"
+                                           onchange="this.form.submit()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Active Filters Display & Clear Options --}}
+                    @php
+                        $activeFilters = collect([
+                            'search' => request('search'),
+                            'plan_filter' => request('plan_filter'),
+                            'status_filter' => request('status_filter'),
+                            'plan_type_filter' => request('plan_type_filter'),
+                            'date_from' => request('date_from'),
+                            'date_to' => request('date_to'),
+                        ])->filter()->count();
+                    @endphp
+
+                    @if($activeFilters > 0)
+                        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
+                            
+                            @if(request('search'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    Search: "{{ request('search') }}"
+                                </span>
+                            @endif
+                            
+                            @if(request('plan_filter'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    Plan: {{ request('plan_filter') === 'no_plan' ? 'No Plan' : $plans->find(request('plan_filter'))?->name }}
+                                </span>
+                            @endif
+                            
+                            @if(request('status_filter'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                    Status: {{ $planStatuses[request('status_filter')] }}
+                                </span>
+                            @endif
+                            
+                            @if(request('plan_type_filter'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                    Type: {{ ucfirst(request('plan_type_filter')) }}
+                                </span>
+                            @endif
+                            
+                            @if(request('date_from') || request('date_to'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                    Date: {{ request('date_from') ?: 'Start' }} - {{ request('date_to') ?: 'End' }}
+                                </span>
+                            @endif
+                            
+                            <a href="{{ route('admin.customers.index') }}" 
+                               class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Clear All
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </form>
+        </div>
 
         {{-- Success/Error Messages --}}
         @if(session('success'))
@@ -45,15 +211,28 @@
         @endif
 
         {{-- Search Results Info --}}
-        @if(request('search'))
+        @if(request()->hasAny(['search', 'plan_filter', 'status_filter', 'plan_type_filter', 'date_from', 'date_to']))
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-lg">
                 <div class="flex items-center justify-between">
                     <span>
-                        Showing results for: <strong>"{{ request('search') }}"</strong> 
-                        ({{ $customers->total() }} {{ Str::plural('result', $customers->total()) }})
+                        @php
+                            $filterCount = collect([
+                                request('search'),
+                                request('plan_filter'),
+                                request('status_filter'),
+                                request('plan_type_filter'),
+                                request('date_from'),
+                                request('date_to'),
+                            ])->filter()->count();
+                        @endphp
+                        
+                        Showing {{ $customers->total() }} {{ Str::plural('customer', $customers->total()) }}
+                        @if($filterCount > 0)
+                            with {{ $filterCount }} {{ Str::plural('filter', $filterCount) }} applied
+                        @endif
                     </span>
                     <a href="{{ route('admin.customers.index') }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 underline">
-                        Clear search
+                        Clear all filters
                     </a>
                 </div>
             </div>
@@ -105,6 +284,11 @@
                                                     {{ $customer->getPlanStatusLabel() }}
                                                 </span>
                                             </div>
+                                            @if($customer->plan_installed_at)
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                    Installed: {{ $customer->plan_installed_at->format('M j, Y') }}
+                                                </p>
+                                            @endif
                                         @else
                                             <p class="text-sm text-gray-500 dark:text-gray-400 italic mb-2">No plan assigned</p>
                                         @endif
@@ -211,6 +395,11 @@
                                                             {{ $customer->getPlanStatusLabel() }}
                                                         </span>
                                                     </div>
+                                                    @if($customer->plan_installed_at)
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                            Installed: {{ $customer->plan_installed_at->format('M j, Y') }}
+                                                        </div>
+                                                    @endif
                                                 @else
                                                     <div class="text-sm text-gray-500 dark:text-gray-400 italic">
                                                         No plan
@@ -289,33 +478,70 @@
         </div>
     </div>
 
-    {{-- Search JavaScript --}}
+    {{-- Enhanced Search and Filter JavaScript --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('customer-search');
-            const searchForm = searchInput.closest('form');
+            const filterForm = document.getElementById('filter-form');
             let searchTimeout;
 
             // Handle live search with debouncing
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                const query = this.value.trim();
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    const query = this.value.trim();
 
-                searchTimeout = setTimeout(() => {
-                    if (query.length >= 2) {
-                        searchForm.submit();
-                    } else if (query.length === 0) {
-                        window.location.href = `{{ route('admin.customers.index') }}`;
+                    searchTimeout = setTimeout(() => {
+                        if (query.length >= 2) {
+                            filterForm.submit();
+                        } else if (query.length === 0) {
+                            // Clear search but preserve other filters
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete('search');
+                            window.location.href = url.toString();
+                        }
+                    }, 500);
+                });
+
+                // Handle form submission (Enter key)
+                filterForm.addEventListener('submit', function(e) {
+                    const query = searchInput.value.trim();
+                    if (query.length === 0) {
+                        e.preventDefault();
+                        // Clear search but preserve other filters
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('search');
+                        window.location.href = url.toString();
                     }
-                }, 500);
-            });
+                });
+            }
 
-            // Handle form submission (Enter key)
-            searchForm.addEventListener('submit', function(e) {
-                const query = searchInput.value.trim();
-                if (query.length === 0) {
+            // Handle sort direction toggle
+            const sortSelect = document.getElementById('sort_by');
+            const sortDirectionInput = document.querySelector('input[name="sort_direction"]');
+            
+            if (sortSelect && sortDirectionInput) {
+                sortSelect.addEventListener('change', function() {
+                    // Reset to desc for new sort fields, except for names which should be asc
+                    if (['first_name', 'last_name', 'email'].includes(this.value)) {
+                        sortDirectionInput.value = 'asc';
+                    } else {
+                        sortDirectionInput.value = 'desc';
+                    }
+                });
+            }
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Focus search on '/' key
+                if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
                     e.preventDefault();
-                    window.location.href = `{{ route('admin.customers.index') }}`;
+                    searchInput?.focus();
+                }
+                
+                // Clear all filters on Escape key when search is focused
+                if (e.key === 'Escape' && document.activeElement === searchInput) {
+                    window.location.href = '{{ route("admin.customers.index") }}';
                 }
             });
         });

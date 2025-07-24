@@ -30,13 +30,60 @@ class CustomerController extends Controller
                 $q->where('first_name', 'LIKE', "%{$searchTerm}%")
                   ->orWhere('last_name', 'LIKE', "%{$searchTerm}%")
                   ->orWhere('email', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%");
+                  ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('service_address', 'LIKE', "%{$searchTerm}%");
             });
         }
+
+        // Filter by plan
+        if ($request->has('plan_filter') && !empty($request->plan_filter)) {
+            if ($request->plan_filter === 'no_plan') {
+                $query->whereNull('plan_id');
+            } else {
+                $query->where('plan_id', $request->plan_filter);
+            }
+        }
+
+        // Filter by plan status
+        if ($request->has('status_filter') && !empty($request->status_filter)) {
+            $query->where('plan_status', $request->status_filter);
+        }
+
+        // Filter by plan type
+        if ($request->has('plan_type_filter') && !empty($request->plan_type_filter)) {
+            $query->whereHas('plan', function ($q) use ($request) {
+                $q->where('type', $request->plan_type_filter);
+            });
+        }
+
+        // Filter by installation date range
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $query->where('plan_installed_at', '>=', $request->date_from);
+        }
         
-        $customers = $query->paginate(15);
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $query->where('plan_installed_at', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
         
-        return view('admin.customers.index', compact('customers'));
+        $allowedSortFields = ['first_name', 'last_name', 'email', 'created_at', 'plan_installed_at'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+        
+        $customers = $query->paginate(15)->withQueryString();
+        
+        // Get data for filter dropdowns
+        $plans = Plan::active()->orderBy('name')->get();
+        $planTypes = Plan::distinct()->pluck('type')->sort();
+        $planStatuses = Customer::PLAN_STATUSES;
+        
+        return view('admin.customers.index', compact('customers', 'plans', 'planTypes', 'planStatuses'));
     }
 
     /**
