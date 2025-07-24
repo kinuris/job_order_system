@@ -40,6 +40,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Technician management routes
     Route::resource('technicians', TechnicianController::class);
     Route::get('technicians/search', [TechnicianController::class, 'search'])->name('technicians.search');
+    Route::get('technicians-export', [TechnicianController::class, 'export'])->name('technicians.export');
+    Route::get('technicians-import', [TechnicianController::class, 'importForm'])->name('technicians.import.form');
+    Route::post('technicians-import', [TechnicianController::class, 'import'])->name('technicians.import');
     
     // Job order management routes
     Route::resource('job-orders', JobOrderController::class);

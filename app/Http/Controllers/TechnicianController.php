@@ -6,6 +6,9 @@ use App\Models\Technician;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TechnicianController extends Controller
 {
@@ -172,5 +175,162 @@ class TechnicianController extends Controller
                 'phone_number' => $technician->phone_number,
             ];
         }));
+    }
+
+    /**
+     * Export technicians to CSV.
+     */
+    public function export()
+    {
+        $technicians = Technician::with('user')->orderBy('created_at')->get();
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="technicians_' . date('Y-m-d_H-i-s') . '.csv"',
+        ];
+        
+        $callback = function() use ($technicians) {
+            $file = fopen('php://output', 'w');
+            
+            // Add CSV headers
+            fputcsv($file, [
+                'Name',
+                'Username', 
+                'Phone Number',
+                'Created Date',
+                'Total Job Orders',
+                'Active Job Orders'
+            ]);
+            
+            foreach ($technicians as $technician) {
+                fputcsv($file, [
+                    $technician->user->name,
+                    $technician->user->username,
+                    $technician->phone_number ?: '',
+                    $technician->created_at->format('Y-m-d'),
+                    $technician->jobOrders()->count(),
+                    $technician->activeJobOrders()->count()
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return Response::stream($callback, 200, $headers);
+    }
+    
+    /**
+     * Show the form for importing technicians.
+     */
+    public function importForm()
+    {
+        return view('admin.technicians.import');
+    }
+    
+    /**
+     * Import technicians from CSV file.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+        
+        $file = $request->file('csv_file');
+        $path = $file->getRealPath();
+        
+        try {
+            DB::beginTransaction();
+            
+            $imported = 0;
+            $skipped = 0;
+            $errors = 0;
+            $errorMessages = [];
+            
+            if (($handle = fopen($path, 'r')) !== false) {
+                // Skip header row
+                $header = fgetcsv($handle);
+                
+                while (($row = fgetcsv($handle)) !== false) {
+                    try {
+                        // Skip empty rows
+                        if (empty(array_filter($row))) {
+                            continue;
+                        }
+                        
+                        $name = trim($row[0] ?? '');
+                        $username = trim($row[1] ?? '');
+                        $phoneNumber = trim($row[2] ?? '');
+                        $password = trim($row[3] ?? '');
+                        
+                        // Validate required fields
+                        if (empty($name) || empty($username)) {
+                            $skipped++;
+                            $errorMessages[] = "Skipped row: Name and username are required";
+                            continue;
+                        }
+                        
+                        // Generate password if not provided
+                        if (empty($password)) {
+                            $password = 'password123'; // Default password
+                        }
+                        
+                        // Check if username already exists
+                        if (User::where('username', $username)->exists()) {
+                            $skipped++;
+                            $errorMessages[] = "Skipped: Username '{$username}' already exists";
+                            continue;
+                        }
+                        
+                        // Create user
+                        $user = User::create([
+                            'name' => $name,
+                            'username' => $username,
+                            'password' => Hash::make($password),
+                            'role' => 'technician',
+                        ]);
+                        
+                        // Create technician
+                        Technician::create([
+                            'user_id' => $user->id,
+                            'phone_number' => $phoneNumber ?: null,
+                        ]);
+                        
+                        $imported++;
+                        
+                    } catch (\Exception $e) {
+                        $errors++;
+                        $errorMessages[] = "Error importing row: " . $e->getMessage();
+                        Log::error("Technician import error", [
+                            'row' => $row,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
+                fclose($handle);
+            }
+            
+            DB::commit();
+            
+            $message = "Import completed. Imported: {$imported}, Skipped: {$skipped}, Errors: {$errors}";
+            
+            if (!empty($errorMessages)) {
+                $message .= " Issues: " . implode('; ', array_slice($errorMessages, 0, 5));
+                if (count($errorMessages) > 5) {
+                    $message .= " and " . (count($errorMessages) - 5) . " more...";
+                }
+            }
+            
+            return redirect()->route('admin.technicians.index')
+                ->with('success', $message);
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Technician import failed", ['error' => $e->getMessage()]);
+            
+            return redirect()->route('admin.technicians.index')
+                ->with('error', 'Import failed: ' . $e->getMessage());
+        }
     }
 }
