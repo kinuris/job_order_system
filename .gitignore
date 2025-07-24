@@ -22,3 +22,5 @@ import.customer.csv
 /.nova
 /.vscode
 /.zed
+
+.DS_Store
