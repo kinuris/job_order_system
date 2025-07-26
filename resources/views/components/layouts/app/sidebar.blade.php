@@ -22,6 +22,7 @@
                     <flux:navlist.item icon="document-text" :href="route('admin.plans.index')" :current="request()->routeIs('admin.plans.*')" wire:navigate>{{ __('Plans') }}</flux:navlist.item>
                     <flux:navlist.item icon="wrench-screwdriver" :href="route('admin.technicians.index')" :current="request()->routeIs('admin.technicians.*')" wire:navigate>{{ __('Technicians') }}</flux:navlist.item>
                     <flux:navlist.item icon="clipboard-document-list" :href="route('admin.job-orders.index')" :current="request()->routeIs('admin.job-orders.*')" wire:navigate>{{ __('Job Orders') }}</flux:navlist.item>
+                    <flux:navlist.item icon="currency-dollar" :href="route('admin.payments.index')" :current="request()->routeIs('admin.payments.*')" wire:navigate>{{ __('Payments') }}</flux:navlist.item>
                 </flux:navlist.group>
                 @endif
             </flux:navlist>

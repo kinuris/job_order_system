@@ -1,0 +1,279 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Customer;
+use App\Models\CustomerPayment;
+use App\Models\PaymentNotice;
+use Carbon\Carbon;
+
+class PaymentService
+{
+    /**
+     * Generate payment notices for all active customers.
+     */
+    public function generateMonthlyNotices()
+    {
+        $customers = Customer::with('plan')
+            ->whereNotNull('plan_id')
+            ->where('plan_status', 'active')
+            ->whereNotNull('plan_installed_at')
+            ->get();
+
+        $noticesCreated = 0;
+
+        foreach ($customers as $customer) {
+            if ($this->shouldGenerateNotice($customer)) {
+                $this->createPaymentNotice($customer);
+                $noticesCreated++;
+            }
+        }
+
+        return $noticesCreated;
+    }
+
+    /**
+     * Check if a customer needs a new payment notice.
+     */
+    protected function shouldGenerateNotice(Customer $customer): bool
+    {
+        $nextBillingDate = $customer->getNextBillingDate();
+        
+        if (!$nextBillingDate) {
+            return false;
+        }
+
+        // Check if notice already exists for this period
+        $existingNotice = $customer->paymentNotices()
+            ->where('due_date', $nextBillingDate)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->exists();
+
+        // Only generate if no existing notice and due date is within next 30 days
+        return !$existingNotice && $nextBillingDate <= Carbon::now()->addDays(30);
+    }
+
+    /**
+     * Create a payment notice for a customer.
+     */
+    public function createPaymentNotice(Customer $customer): PaymentNotice
+    {
+        $dueDate = $customer->getNextBillingDate();
+        $periodFrom = $dueDate->copy()->subMonth();
+        $periodTo = $dueDate->copy()->subDay();
+
+        return PaymentNotice::create([
+            'customer_id' => $customer->id,
+            'plan_id' => $customer->plan_id,
+            'due_date' => $dueDate,
+            'period_from' => $periodFrom,
+            'period_to' => $periodTo,
+            'amount_due' => $customer->plan->monthly_rate,
+            'status' => 'pending',
+        ]);
+    }
+
+    /**
+     * Record a customer payment.
+     */
+    public function recordPayment(
+        Customer $customer,
+        float $amount,
+        string $paymentMethod,
+        Carbon $paymentDate,
+        int $monthsCovered = 1,
+        ?string $referenceNumber = null,
+        ?string $notes = null
+    ): CustomerPayment {
+        // Determine the period this payment covers
+        $lastPayment = $customer->payments()
+            ->confirmed()
+            ->orderBy('period_to', 'desc')
+            ->first();
+
+        if ($lastPayment) {
+            $periodFrom = $lastPayment->period_to->addDay();
+        } else {
+            $periodFrom = $customer->plan_installed_at ?: $paymentDate;
+        }
+
+        $periodTo = $periodFrom->copy()->addMonths($monthsCovered)->subDay();
+
+        $payment = CustomerPayment::create([
+            'customer_id' => $customer->id,
+            'plan_id' => $customer->plan_id,
+            'amount' => $amount,
+            'plan_rate' => $customer->plan->monthly_rate,
+            'payment_date' => $paymentDate,
+            'period_from' => $periodFrom,
+            'period_to' => $periodTo,
+            'payment_method' => $paymentMethod,
+            'reference_number' => $referenceNumber,
+            'notes' => $notes,
+            'status' => 'confirmed',
+        ]);
+
+        // Mark relevant payment notices as paid
+        $this->markNoticesAsPaid($customer, $periodFrom, $periodTo, $paymentDate);
+
+        return $payment;
+    }
+
+    /**
+     * Mark payment notices as paid for the covered period.
+     */
+    protected function markNoticesAsPaid(Customer $customer, Carbon $periodFrom, Carbon $periodTo, Carbon $paidDate)
+    {
+        $notices = $customer->paymentNotices()
+            ->where(function ($query) use ($periodFrom, $periodTo) {
+                $query->whereBetween('due_date', [$periodFrom, $periodTo])
+                      ->orWhere(function ($q) use ($periodFrom, $periodTo) {
+                          $q->where('period_from', '>=', $periodFrom)
+                            ->where('period_to', '<=', $periodTo);
+                      });
+            })
+            ->whereIn('status', ['pending', 'overdue'])
+            ->get();
+
+        foreach ($notices as $notice) {
+            $notice->markAsPaid($paidDate);
+        }
+    }
+
+    /**
+     * Update overdue statuses for all payment notices.
+     */
+    public function updateOverdueStatuses()
+    {
+        $overdueNotices = PaymentNotice::pending()
+            ->where('due_date', '<', Carbon::now())
+            ->get();
+
+        foreach ($overdueNotices as $notice) {
+            $notice->updateOverdueStatus();
+        }
+
+        return $overdueNotices->count();
+    }
+
+    /**
+     * Recalculate all payment notices from installation dates.
+     * This will generate notices for all months from installation to current date.
+     */
+    public function recalculateFromInstallationDates()
+    {
+        $customers = Customer::whereNotNull('plan_installed_at')
+            ->whereHas('plan')
+            ->with('plan')
+            ->get();
+
+        $totalNotices = 0;
+        $currentDate = Carbon::now();
+
+        foreach ($customers as $customer) {
+            $installationDate = Carbon::parse($customer->plan_installed_at);
+            
+            // Start from the month after installation
+            $billingMonth = $installationDate->copy()->addMonth()->startOfMonth();
+            
+            // Generate notices until current month + 1 (for next month's notice)
+            $maxDate = $currentDate->copy()->addMonth()->endOfMonth();
+            
+            while ($billingMonth <= $maxDate) {
+                $dueDate = $billingMonth->copy();
+                $periodFrom = $billingMonth->copy()->subMonth();
+                $periodTo = $billingMonth->copy()->subDay();
+                
+                // Check if notice already exists
+                $existingNotice = $customer->paymentNotices()
+                    ->where('due_date', $dueDate->format('Y-m-d'))
+                    ->exists();
+                
+                if (!$existingNotice) {
+                    PaymentNotice::create([
+                        'customer_id' => $customer->id,
+                        'plan_id' => $customer->plan_id,
+                        'due_date' => $dueDate,
+                        'period_from' => $periodFrom,
+                        'period_to' => $periodTo,
+                        'amount_due' => $customer->plan->monthly_rate,
+                        'status' => $dueDate < $currentDate ? 'overdue' : 'pending',
+                    ]);
+                    
+                    $totalNotices++;
+                }
+                
+                $billingMonth->addMonth();
+                
+                // Safety check to prevent infinite loop
+                if ($billingMonth->year > $currentDate->year + 2) {
+                    break;
+                }
+            }
+        }
+
+        return $totalNotices;
+    }
+
+    /**
+     * Get payment summary for a customer.
+     */
+    public function getCustomerPaymentSummary(Customer $customer): array
+    {
+        $totalPaid = $customer->payments()->confirmed()->sum('amount');
+        $overdueNotices = $customer->getOverdueNotices();
+        $overdueAmount = $overdueNotices->sum('amount_due');
+        $nextDueDate = $customer->getNextBillingDate();
+        $balance = $customer->getPaymentBalance();
+
+        return [
+            'total_paid' => $totalPaid,
+            'overdue_amount' => $overdueAmount,
+            'overdue_count' => $overdueNotices->count(),
+            'next_due_date' => $nextDueDate,
+            'balance' => $balance,
+            'is_advance' => $balance < 0,
+            'status' => $this->getPaymentStatus($customer),
+        ];
+    }
+
+    /**
+     * Get payment status for a customer.
+     */
+    protected function getPaymentStatus(Customer $customer): string
+    {
+        $overdueNotices = $customer->getOverdueNotices();
+        
+        if ($overdueNotices->isNotEmpty()) {
+            return 'overdue';
+        }
+
+        $balance = $customer->getPaymentBalance();
+        
+        if ($balance < 0) {
+            return 'advance';
+        } elseif ($balance == 0) {
+            return 'current';
+        } else {
+            return 'pending';
+        }
+    }
+
+    /**
+     * Get dashboard statistics.
+     */
+    public function getDashboardStats(): array
+    {
+        $overdueNotices = PaymentNotice::overdue()->count();
+        $dueThisWeek = PaymentNotice::dueWithin(7)->count();
+        $totalUnpaid = PaymentNotice::whereIn('status', ['pending', 'overdue'])->sum('amount_due');
+        $totalCollected = CustomerPayment::confirmed()->whereMonth('payment_date', Carbon::now())->sum('amount');
+
+        return [
+            'overdue_notices' => $overdueNotices,
+            'due_this_week' => $dueThisWeek,
+            'total_unpaid' => $totalUnpaid,
+            'monthly_collected' => $totalCollected,
+        ];
+    }
+}

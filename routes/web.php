@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TechnicianJobOrderController;
 use App\Http\Controllers\JobOrderMessageController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Models\JobOrder;
 
 Route::get('/', function () {
@@ -56,6 +57,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->name('job-orders.update-status');
     Route::get('job-orders/status/{status?}', [JobOrderController::class, 'getByStatus'])
         ->name('job-orders.by-status');
+    
+    // Payment management routes
+    Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::get('payments/create', [PaymentController::class, 'create'])->name('payments.create');
+    Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+    Route::get('payments/customer/{customer}', [PaymentController::class, 'customer'])->name('payments.customer');
+    Route::post('payments/generate-notices', [PaymentController::class, 'generateNotices'])->name('payments.generate-notices');
+    Route::post('payments/update-overdue', [PaymentController::class, 'updateOverdue'])->name('payments.update-overdue');
+    Route::patch('payment-notices/{notice}/mark-paid', [PaymentController::class, 'markNoticePaid'])->name('payment-notices.mark-paid');
+    Route::patch('payment-notices/{notice}/cancel', [PaymentController::class, 'cancelNotice'])->name('payment-notices.cancel');
 });
 
 // Technician routes (for managing their assigned job orders)

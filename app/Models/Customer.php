@@ -69,6 +69,22 @@ class Customer extends Model
     }
 
     /**
+     * Get the payments for the customer.
+     */
+    public function payments()
+    {
+        return $this->hasMany(CustomerPayment::class);
+    }
+
+    /**
+     * Get the payment notices for the customer.
+     */
+    public function paymentNotices()
+    {
+        return $this->hasMany(PaymentNotice::class);
+    }
+
+    /**
      * Get the plan status label.
      */
     public function getPlanStatusLabel(): string
@@ -82,5 +98,63 @@ class Customer extends Model
     public function hasActivePlan(): bool
     {
         return $this->plan_id && $this->plan_status === 'active';
+    }
+
+    /**
+     * Get the customer's next billing date.
+     */
+    public function getNextBillingDate()
+    {
+        if (!$this->plan_installed_at) {
+            return null;
+        }
+
+        $lastPayment = $this->payments()
+            ->confirmed()
+            ->orderBy('period_to', 'desc')
+            ->first();
+
+        if ($lastPayment) {
+            // If there's a payment, next billing is after the last paid period
+            return $lastPayment->period_to->addDay();
+        }
+
+        // If no payments, billing starts from installation date
+        return $this->plan_installed_at->addMonth();
+    }
+
+    /**
+     * Get overdue payment notices.
+     */
+    public function getOverdueNotices()
+    {
+        return $this->paymentNotices()->overdue()->get();
+    }
+
+    /**
+     * Get current payment balance (negative means overpaid/advance payment).
+     */
+    public function getPaymentBalance()
+    {
+        if (!$this->plan || !$this->plan_installed_at) {
+            return 0;
+        }
+
+        $totalPaid = $this->payments()
+            ->confirmed()
+            ->sum('amount');
+
+        $monthsActive = $this->plan_installed_at->diffInMonths(now()) + 1;
+        $totalDue = $monthsActive * $this->plan->monthly_rate;
+
+        return $totalDue - $totalPaid;
+    }
+
+    /**
+     * Check if customer has advance payments.
+     */
+    public function hasAdvancePayments()
+    {
+        return $this->getPaymentBalance() < 0;
     }
 }
