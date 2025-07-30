@@ -1,4 +1,9 @@
 <x-layouts.app title="Record Payment">
+    {{-- Prevent browser caching to ensure fresh payment data --}}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <div class="space-y-4 sm:space-y-6 px-2 sm:px-0">
         {{-- Header --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -202,6 +207,11 @@
     {{-- JavaScript for dynamic customer info and month selection --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Force browser to not cache this page to ensure fresh payment data
+            if (performance.navigation.type === performance.navigation.TYPE_BACK_FORWARD) {
+                location.reload();
+            }
+            
             const customerSelect = document.getElementById('customer_id');
             const customerInfo = document.getElementById('customer-info');
             const displayPlan = document.getElementById('display-plan');
@@ -241,10 +251,6 @@
                 while (currentDate <= maxDate) {
                     const monthKey = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
                     const isPaid = paidMonths.includes(monthKey);
-                    
-                    if (isPaid) {
-                        console.log('Month', monthKey, 'is marked as paid');
-                    }
                     
                     const monthData = {
                         index: monthIndex,
@@ -388,17 +394,22 @@
                             const parsed = JSON.parse(paidMonthsStr);
                             if (Array.isArray(parsed)) {
                                 paidMonths = parsed;
-                                console.log('Paid months loaded:', paidMonths);
+                            } else if (typeof parsed === 'object' && parsed !== null) {
+                                // Handle case where PHP returns object instead of array
+                                paidMonths = Object.values(parsed);
+                                console.warn('Paid months was object, converted to array:', paidMonths);
                             } else {
-                                console.warn('Paid months data is not an array:', parsed);
+                                console.warn('Paid months data is not an array or object:', parsed);
                                 paidMonths = [];
                             }
+                            // Temporary debugging - remove after testing
+                            console.log('Customer ' + selectedOption.value + ' paid months:', paidMonths);
                         } catch (e) {
                             console.error('Error parsing paid months JSON:', e);
                             paidMonths = [];
                         }
                     } else {
-                        console.log('No paid months data found for this customer');
+                        console.log('No paid months data for customer ' + selectedOption.value);
                     }
                     
                     if (installationDateStr) {

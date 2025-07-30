@@ -70,18 +70,20 @@ class PaymentController extends Controller
         if ($request->has('customer_id')) {
             $customer = Customer::with('plan')->findOrFail($request->customer_id);
         }
-        
+
         $customers = Customer::with('plan')
             ->whereNotNull('plan_id')
             ->where('plan_status', 'active')
             ->orderBy('first_name')
             ->get();
 
-        // Get paid months information for each customer
+        // Get paid months information for each customer - always fresh from database
         $customersPaidMonths = [];
         foreach ($customers as $cust) {
             if ($cust->plan_installed_at) {
                 try {
+                    // Force fresh data by clearing any model cache
+                    $cust->refresh();
                     $paidMonths = $this->getPaidMonthsForCustomer($cust);
                     $customersPaidMonths[$cust->id] = $paidMonths;
                 } catch (\Exception $e) {
@@ -91,12 +93,10 @@ class PaymentController extends Controller
             } else {
                 $customersPaidMonths[$cust->id] = [];
             }
-        }
-            
-        return view('admin.payments.create', compact('customer', 'customers', 'customersPaidMonths'));
+        }        return view('admin.payments.create', compact('customer', 'customers', 'customersPaidMonths'));
     }
 
-    /**
+        /**
      * Get paid months for a customer
      */
     private function getPaidMonthsForCustomer(Customer $customer): array
@@ -105,8 +105,10 @@ class PaymentController extends Controller
             return [];
         }
 
+        // Always get fresh payment data from database
         $payments = CustomerPayment::where('customer_id', $customer->id)
             ->where('status', 'confirmed')
+            ->orderBy('period_from')
             ->get();
 
         $paidMonths = [];
@@ -122,7 +124,8 @@ class PaymentController extends Controller
             }
         }
 
-        return array_unique($paidMonths);
+        // Use array_values to ensure we get a proper indexed array, not associative
+        return array_values(array_unique($paidMonths));
     }
 
     /**
