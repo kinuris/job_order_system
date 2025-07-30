@@ -85,7 +85,10 @@ class PaymentService
         ?string $referenceNumber = null,
         ?string $notes = null
     ): CustomerPayment {
-        // Determine the period this payment covers
+        // Calculate expected amount based on monthly rate and months covered
+        $expectedAmount = $customer->plan->monthly_rate * $monthsCovered;
+        
+        // Determine the period this payment covers using discrete month logic
         $lastPayment = $customer->payments()
             ->confirmed()
             ->orderBy('period_to', 'desc')
@@ -97,7 +100,10 @@ class PaymentService
             $periodFrom = $customer->plan_installed_at ?: $paymentDate;
         }
 
-        $periodTo = $periodFrom->copy()->addMonths($monthsCovered)->subDay();
+        // Calculate period_to to cover exactly the specified number of discrete months
+        $currentMonth = $periodFrom->copy()->startOfMonth();
+        $lastMonth = $currentMonth->copy()->addMonths($monthsCovered - 1);
+        $periodTo = $lastMonth->copy()->endOfMonth();
 
         $payment = CustomerPayment::create([
             'customer_id' => $customer->id,

@@ -96,11 +96,62 @@ class CustomerPayment extends Model
     }
 
     /**
-     * Get the period duration in months.
+     * Get the period duration in months (discrete calculation).
      */
     public function getPeriodMonthsAttribute()
     {
-        return $this->period_from->diffInMonths($this->period_to) + 1;
+        // Use discrete month calculation similar to Customer::getUnpaidMonths
+        $current = $this->period_from->copy()->startOfMonth();
+        $end = $this->period_to->copy()->startOfMonth();
+        
+        $months = 0;
+        while ($current <= $end) {
+            $months++;
+            $current->addMonth();
+        }
+        
+        return $months;
+    }
+
+    /**
+     * Get the discrete months covered by this payment.
+     */
+    public function getDiscreteMonthsAttribute()
+    {
+        $months = [];
+        $current = $this->period_from->copy()->startOfMonth();
+        $end = $this->period_to->copy()->startOfMonth();
+        
+        while ($current <= $end) {
+            $months[] = $current->format('M Y');
+            $current->addMonth();
+        }
+        
+        return $months;
+    }
+
+    /**
+     * Get formatted discrete months as a string.
+     */
+    public function getFormattedDiscreteMonthsAttribute()
+    {
+        $months = $this->discrete_months;
+        
+        if (count($months) === 1) {
+            return $months[0];
+        } elseif (count($months) === 2) {
+            return implode(' & ', $months);
+        } else {
+            return $months[0] . ' - ' . end($months) . ' (' . count($months) . ' months)';
+        }
+    }
+
+    /**
+     * Get calculated amount based on monthly rate and months covered.
+     */
+    public function getCalculatedAmountAttribute()
+    {
+        return $this->plan_rate * $this->period_months;
     }
 
     /**

@@ -127,13 +127,25 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $payment->formatted_amount }}</div>
                                         @if($payment->period_months > 1)
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $payment->period_months }} months</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ $payment->period_months }} months × ₱{{ number_format($payment->plan_rate, 2) }}
+                                            </div>
+                                            @if(abs($payment->amount - $payment->calculated_amount) > 0.01)
+                                                <div class="text-xs text-blue-600 dark:text-blue-400">
+                                                    (Expected: ₱{{ number_format($payment->calculated_amount, 2) }})
+                                                </div>
+                                            @endif
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900 dark:text-gray-100">
-                                            {{ $payment->period_from->format('M j') }} - {{ $payment->period_to->format('M j, Y') }}
+                                            {{ $payment->formatted_discrete_months }}
                                         </div>
+                                        @if($payment->period_months > 3)
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ $payment->period_from->format('M j') }} - {{ $payment->period_to->format('M j, Y') }}
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900 dark:text-gray-100">{{ $payment->payment_method_label }}</div>
