@@ -4,7 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Plan;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Exception;
 
 class CustomerController extends Controller
 {
@@ -198,5 +203,191 @@ class CustomerController extends Controller
             ->get();
 
         return response()->json($customers);
+    }
+
+    /**
+     * Export customers to CSV
+     */
+    public function export()
+    {
+        $customers = Customer::with(['plan'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $filename = 'customers_' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($customers) {
+            $file = fopen('php://output', 'w');
+            
+            // Write CSV header matching import.customer.csv format
+            fputcsv($file, ['Name', 'Address', 'Plan', 'Date Installed']);
+            
+            foreach ($customers as $customer) {
+                $name = trim($customer->first_name . ' ' . $customer->last_name);
+                $address = $customer->service_address ?: '';
+                $plan = $customer->plan ? $customer->plan->name : '';
+                $dateInstalled = $customer->plan_installed_at ? 
+                    $customer->plan_installed_at->format('n/j/Y') : '';
+                
+                fputcsv($file, [$name, $address, $plan, $dateInstalled]);
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Show the import form
+     */
+    public function importForm()
+    {
+        return view('admin.customers.import');
+    }
+
+    /**
+     * Import customers from CSV
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $path = $file->getRealPath();
+            $data = array_map('str_getcsv', file($path));
+            
+            // Remove header row
+            $header = array_shift($data);
+            
+            $imported = 0;
+            $skipped = 0;
+            $errors = [];
+            
+            DB::beginTransaction();
+            
+            foreach ($data as $index => $row) {
+                $rowNumber = $index + 2; // +2 because we removed header and arrays are 0-indexed
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                
+                // Ensure we have at least 4 columns
+                while (count($row) < 4) {
+                    $row[] = '';
+                }
+                
+                [$name, $address, $planName, $dateInstalled] = $row;
+                
+                // Skip if no name
+                if (empty(trim($name))) {
+                    $skipped++;
+                    continue;
+                }
+                
+                // Parse name (assuming "First Last" format)
+                $nameParts = explode(' ', trim($name), 2);
+                $firstName = $nameParts[0];
+                $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
+                
+                // Find or create plan
+                $plan = null;
+                if (!empty(trim($planName))) {
+                    $plan = Plan::where('name', trim($planName))->first();
+                    if (!$plan) {
+                        // Create plan if it doesn't exist
+                        $plan = Plan::create([
+                            'name' => trim($planName),
+                            'type' => 'internet', // Default type
+                            'description' => 'Imported plan: ' . trim($planName),
+                            'monthly_rate' => 1299.00, // Default rate
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+                
+                // Parse installation date
+                $installationDate = null;
+                if (!empty(trim($dateInstalled))) {
+                    try {
+                        $installationDate = Carbon::createFromFormat('n/j/Y', trim($dateInstalled));
+                    } catch (Exception $e) {
+                        try {
+                            $installationDate = Carbon::createFromFormat('m/d/Y', trim($dateInstalled));
+                        } catch (Exception $e2) {
+                            try {
+                                $installationDate = Carbon::parse(trim($dateInstalled));
+                            } catch (Exception $e3) {
+                                $errors[] = "Row {$rowNumber}: Invalid date format '{$dateInstalled}'";
+                                continue;
+                            }
+                        }
+                    }
+                }
+                
+                // Generate unique email
+                $baseEmail = strtolower(str_replace(' ', '.', $firstName . '.' . $lastName));
+                $email = $baseEmail . '@customer.local';
+                $counter = 1;
+                while (Customer::where('email', $email)->exists()) {
+                    $email = $baseEmail . $counter . '@customer.local';
+                    $counter++;
+                }
+                
+                try {
+                    // Create customer
+                    $customer = Customer::create([
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                        'email' => $email,
+                        'phone_number' => '', // Not in CSV
+                        'service_address' => trim($address),
+                        'plan_id' => $plan ? $plan->id : null,
+                        'plan_installed_at' => $installationDate,
+                        'plan_status' => $plan ? 'active' : null,
+                    ]);
+                    
+                    $imported++;
+                } catch (Exception $e) {
+                    $errors[] = "Row {$rowNumber}: Failed to create customer - " . $e->getMessage();
+                }
+            }
+            
+            DB::commit();
+            
+            // Generate payment notices for imported customers if they have plans
+            if ($imported > 0) {
+                $paymentService = new PaymentService();
+                $noticesGenerated = $paymentService->recalculateFromInstallationDates();
+            }
+            
+            $message = "Import completed! Imported: {$imported}, Skipped: {$skipped}";
+            if (count($errors) > 0) {
+                $message .= ". Errors: " . implode(', ', array_slice($errors, 0, 3));
+                if (count($errors) > 3) {
+                    $message .= " and " . (count($errors) - 3) . " more...";
+                }
+            }
+            
+            return redirect()->route('admin.customers.index')
+                ->with('success', $message);
+                
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Customer import failed: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Import failed: ' . $e->getMessage());
+        }
     }
 }

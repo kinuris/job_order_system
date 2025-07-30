@@ -39,6 +39,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('customers', CustomerController::class);
     Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
     
+    // Customer import/export routes
+    Route::get('customers-export', [CustomerController::class, 'export'])->name('customers.export');
+    Route::get('customers-import', [CustomerController::class, 'importForm'])->name('customers.import.form');
+    Route::post('customers-import', [CustomerController::class, 'import'])->name('customers.import');
+    
     // Plan management routes
     Route::resource('plans', PlanController::class);
     
