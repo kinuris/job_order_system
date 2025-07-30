@@ -48,7 +48,16 @@ class PaymentController extends Controller
         
         $notices = $query->orderBy('due_date', 'asc')->paginate(15);
         
-        return view('admin.payments.index', compact('stats', 'notices'));
+        // Calculate unpaid months for each customer using the model method
+        $customerUnpaidCounts = [];
+        foreach ($notices as $notice) {
+            $customerId = $notice->customer_id;
+            if (!isset($customerUnpaidCounts[$customerId])) {
+                $customerUnpaidCounts[$customerId] = $notice->customer->getUnpaidMonths();
+            }
+        }
+        
+        return view('admin.payments.index', compact('stats', 'notices', 'customerUnpaidCounts'));
     }
 
     /**
@@ -67,8 +76,53 @@ class PaymentController extends Controller
             ->where('plan_status', 'active')
             ->orderBy('first_name')
             ->get();
+
+        // Get paid months information for each customer
+        $customersPaidMonths = [];
+        foreach ($customers as $cust) {
+            if ($cust->plan_installed_at) {
+                try {
+                    $paidMonths = $this->getPaidMonthsForCustomer($cust);
+                    $customersPaidMonths[$cust->id] = $paidMonths;
+                } catch (\Exception $e) {
+                    // If there's an error getting paid months, default to empty array
+                    $customersPaidMonths[$cust->id] = [];
+                }
+            } else {
+                $customersPaidMonths[$cust->id] = [];
+            }
+        }
             
-        return view('admin.payments.create', compact('customer', 'customers'));
+        return view('admin.payments.create', compact('customer', 'customers', 'customersPaidMonths'));
+    }
+
+    /**
+     * Get paid months for a customer
+     */
+    private function getPaidMonthsForCustomer(Customer $customer): array
+    {
+        if (!$customer->plan_installed_at) {
+            return [];
+        }
+
+        $payments = CustomerPayment::where('customer_id', $customer->id)
+            ->where('status', 'confirmed')
+            ->get();
+
+        $paidMonths = [];
+        
+        foreach ($payments as $payment) {
+            $currentMonth = $payment->period_from->copy()->startOfMonth();
+            $endMonth = $payment->period_to->copy()->startOfMonth();
+            
+            while ($currentMonth <= $endMonth) {
+                $monthKey = $currentMonth->format('Y-m');
+                $paidMonths[] = $monthKey;
+                $currentMonth->addMonth();
+            }
+        }
+
+        return array_unique($paidMonths);
     }
 
     /**
@@ -81,7 +135,7 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'required|in:' . implode(',', array_keys(CustomerPayment::PAYMENT_METHODS)),
             'payment_date' => 'required|date|before_or_equal:today',
-            'months_covered' => 'required|integer|min:1|max:12',
+            'months_covered' => 'required|integer|min:1',
             'reference_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
         ]);

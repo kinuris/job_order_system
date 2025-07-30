@@ -12,7 +12,7 @@ class PaymentService
     /**
      * Generate payment notices for all active customers.
      */
-    public function generateMonthlyNotices()
+    public function generateMonthlyNotices(): int
     {
         $customers = Customer::with('plan')
             ->whereNotNull('plan_id')

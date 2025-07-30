@@ -157,4 +157,33 @@ class Customer extends Model
     {
         return $this->getPaymentBalance() < 0;
     }
+
+    /**
+     * Get the number of unpaid months for this customer (discrete calculation).
+     */
+    public function getUnpaidMonths(): int
+    {
+        if (!$this->plan_installed_at || $this->plan_installed_at > now()) {
+            return 0;
+        }
+
+        // Calculate discrete months since installation
+        $installationDate = $this->plan_installed_at->startOfMonth();
+        $currentDate = now()->startOfMonth();
+        $monthsSinceInstallation = $installationDate->diffInMonths($currentDate) + 1;
+
+        // Calculate discrete paid months
+        $payments = $this->payments()->where('status', 'confirmed')->get();
+        $totalPaidMonths = 0;
+
+        foreach ($payments as $payment) {
+            $periodStart = $payment->period_from->startOfMonth();
+            $periodEnd = $payment->period_to->startOfMonth();
+            $monthsCovered = $periodStart->diffInMonths($periodEnd) + 1;
+            $totalPaidMonths += $monthsCovered;
+        }
+
+        // Return discrete unpaid months
+        return max(0, $monthsSinceInstallation - $totalPaidMonths);
+    }
 }

@@ -33,6 +33,7 @@
                                     data-plan="{{ $cust->plan->name ?? 'No Plan' }}"
                                     data-rate="{{ $cust->plan->monthly_rate ?? 0 }}"
                                     data-installation-date="{{ $cust->plan_installed_at ? $cust->plan_installed_at->format('Y-m-d') : '' }}"
+                                    data-paid-months="{{ json_encode(isset($customersPaidMonths[$cust->id]) ? $customersPaidMonths[$cust->id] : []) }}"
                                     {{ (old('customer_id') == $cust->id || ($customer && $customer->id == $cust->id)) ? 'selected' : '' }}>
                                 {{ $cust->full_name }} - {{ $cust->plan->name ?? 'No Plan' }} (₱{{ number_format($cust->plan->monthly_rate ?? 0, 2) }})
                                 @if($cust->plan_installed_at)
@@ -213,11 +214,17 @@
             let selectedMonthIndex = 0; // 0 = installation month
             let currentMonthlyRate = 0;
             let installationDate = null;
+            let paidMonths = []; // Array of paid month keys (YYYY-MM format)
 
             // Generate month options starting from installation date
             function generateMonths() {
                 if (!installationDate) {
                     return [];
+                }
+                
+                // Ensure paidMonths is always an array
+                if (!Array.isArray(paidMonths)) {
+                    paidMonths = [];
                 }
                 
                 const months = [];
@@ -232,13 +239,22 @@
                 const maxDate = new Date(today.getFullYear(), today.getMonth() + 3, 1); // Current month + 3 months ahead
                 
                 while (currentDate <= maxDate) {
+                    const monthKey = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const isPaid = paidMonths.includes(monthKey);
+                    
+                    if (isPaid) {
+                        console.log('Month', monthKey, 'is marked as paid');
+                    }
+                    
                     const monthData = {
                         index: monthIndex,
                         date: new Date(currentDate),
+                        monthKey: monthKey,
                         label: currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
                         fullLabel: currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
                         isPast: currentDate < today,
-                        isCurrent: currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear()
+                        isCurrent: currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear(),
+                        isPaid: isPaid
                     };
                     
                     months.push(monthData);
@@ -265,12 +281,17 @@
                     const button = document.createElement('button');
                     button.type = 'button';
                     
-                    const isSelected = month.index <= selectedMonthIndex;
-                    const isPastDue = month.isPast && !isSelected;
+                    // Only unpaid months can be selected
+                    const isSelected = !month.isPaid && month.index <= selectedMonthIndex;
+                    const isPastDue = month.isPast && !month.isPaid && !isSelected;
                     
                     let buttonClass = 'px-3 py-2 text-sm font-medium rounded-lg border transition-colors ';
                     
-                    if (isSelected) {
+                    if (month.isPaid) {
+                        // Paid months: green background, clearly unselectable
+                        buttonClass += 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300 cursor-not-allowed opacity-75';
+                        button.disabled = true;
+                    } else if (isSelected) {
                         buttonClass += 'bg-blue-600 border-blue-600 text-white';
                     } else if (isPastDue) {
                         buttonClass += 'bg-red-100 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400';
@@ -282,45 +303,66 @@
                     button.textContent = month.label;
                     
                     let title = month.fullLabel;
-                    if (month.isPast && !isSelected) {
+                    if (month.isPaid) {
+                        title += ' (Already paid - cannot select)';
+                    } else if (month.isPast && !isSelected) {
                         title += ' (Past due)';
                     } else if (month.isCurrent) {
                         title += ' (Current month)';
                     }
                     button.title = title;
                     
-                    button.addEventListener('click', function() {
-                        selectedMonthIndex = month.index;
-                        updateMonthSelection();
-                    });
+                    // Only add click listener for unpaid months
+                    if (!month.isPaid) {
+                        button.addEventListener('click', function() {
+                            selectedMonthIndex = month.index;
+                            updateMonthSelection();
+                        });
+                    }
                     
                     monthsGrid.appendChild(button);
                 });
             }
 
             function updateMonthSelection() {
-                const monthsCovered = selectedMonthIndex + 1;
-                monthsInput.value = monthsCovered;
+                const months = generateMonths();
+                
+                // Count only unpaid months up to the selected index
+                let unpaidMonthsCovered = 0;
+                let startMonthLabel = '';
+                let endMonthLabel = '';
+                let firstUnpaidFound = false;
+                
+                for (let i = 0; i <= selectedMonthIndex && i < months.length; i++) {
+                    if (!months[i].isPaid) {
+                        if (!firstUnpaidFound) {
+                            startMonthLabel = months[i].fullLabel;
+                            firstUnpaidFound = true;
+                        }
+                        endMonthLabel = months[i].fullLabel;
+                        unpaidMonthsCovered++;
+                    }
+                }
+                
+                monthsInput.value = unpaidMonthsCovered;
                 
                 // Update visual selection
                 renderMonths();
                 
                 // Update summary
-                const months = generateMonths();
-                if (months.length > 0) {
-                    const startMonth = months[0].fullLabel;
-                    const endMonth = months[selectedMonthIndex].fullLabel;
-                    
-                    if (monthsCovered === 1) {
-                        monthsSummary.textContent = `Covering ${startMonth} (1 month)`;
+                if (months.length > 0 && unpaidMonthsCovered > 0) {
+                    if (unpaidMonthsCovered === 1) {
+                        monthsSummary.textContent = `Covering ${startMonthLabel} (1 unpaid month)`;
                     } else {
-                        monthsSummary.textContent = `Covering ${startMonth} to ${endMonth} (${monthsCovered} months)`;
+                        monthsSummary.textContent = `Covering ${startMonthLabel} to ${endMonthLabel} (${unpaidMonthsCovered} unpaid months)`;
                     }
+                } else if (months.length > 0) {
+                    monthsSummary.textContent = 'No unpaid months selected';
                 } else {
                     monthsSummary.textContent = 'No installation date available';
                 }
                 
-                // Update amount
+                // Update amount based only on unpaid months
                 updateAmount();
             }
 
@@ -331,6 +373,7 @@
                     const plan = selectedOption.getAttribute('data-plan');
                     const rate = parseFloat(selectedOption.getAttribute('data-rate'));
                     const installationDateStr = selectedOption.getAttribute('data-installation-date');
+                    const paidMonthsStr = selectedOption.getAttribute('data-paid-months');
                     
                     displayPlan.textContent = plan;
                     displayRate.textContent = '₱' + rate.toFixed(2);
@@ -338,13 +381,46 @@
                     
                     currentMonthlyRate = rate;
                     
+                    // Parse paid months with proper error handling
+                    paidMonths = [];
+                    if (paidMonthsStr) {
+                        try {
+                            const parsed = JSON.parse(paidMonthsStr);
+                            if (Array.isArray(parsed)) {
+                                paidMonths = parsed;
+                                console.log('Paid months loaded:', paidMonths);
+                            } else {
+                                console.warn('Paid months data is not an array:', parsed);
+                                paidMonths = [];
+                            }
+                        } catch (e) {
+                            console.error('Error parsing paid months JSON:', e);
+                            paidMonths = [];
+                        }
+                    } else {
+                        console.log('No paid months data found for this customer');
+                    }
+                    
                     if (installationDateStr) {
                         installationDate = new Date(installationDateStr);
                         selectedMonthIndex = 0; // Reset to first month
+                        
+                        // Find the first unpaid month as starting point
+                        const months = generateMonths();
+                        let firstUnpaidIndex = 0;
+                        for (let i = 0; i < months.length; i++) {
+                            if (!months[i].isPaid) {
+                                firstUnpaidIndex = i;
+                                break;
+                            }
+                        }
+                        selectedMonthIndex = firstUnpaidIndex;
+                        
                         renderMonths();
                         updateMonthSelection();
                     } else {
                         installationDate = null;
+                        paidMonths = [];
                         monthsGrid.innerHTML = '<p class="text-sm text-red-500 dark:text-red-400 col-span-full">This customer has no installation date set.</p>';
                         monthsSummary.textContent = 'Installation date required';
                     }
@@ -352,6 +428,7 @@
                     customerInfo.classList.add('hidden');
                     currentMonthlyRate = 0;
                     installationDate = null;
+                    paidMonths = [];
                     monthsGrid.innerHTML = '';
                     monthsSummary.textContent = 'No customer selected';
                 }

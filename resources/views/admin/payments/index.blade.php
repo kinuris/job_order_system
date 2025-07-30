@@ -131,6 +131,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Due Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unpaid Months</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -167,6 +168,12 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            {{ $customerUnpaidCounts[$notice->customer_id] ?? 0 }} 
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">months</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                             @if($notice->status === 'paid') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
                                             @elseif($notice->status === 'overdue') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
@@ -180,7 +187,7 @@
                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
                                                 View
                                             </a>
-                                            @if($notice->status !== 'paid')
+                                            @if(($customerUnpaidCounts[$notice->customer_id] ?? 0) > 0)
                                                 <a href="{{ route('admin.payments.create', ['customer_id' => $notice->customer->id]) }}" 
                                                    class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                                                     Record Payment
