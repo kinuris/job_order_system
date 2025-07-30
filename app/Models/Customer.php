@@ -186,4 +186,12 @@ class Customer extends Model
         // Return discrete unpaid months
         return max(0, $monthsSinceInstallation - $totalPaidMonths);
     }
+
+    /**
+     * Check if the customer is fully paid (no unpaid months).
+     */
+    public function isFullyPaid(): bool
+    {
+        return $this->getUnpaidMonths() === 0;
+    }
 }

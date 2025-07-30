@@ -174,11 +174,27 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
+                                        @php
+                                            $customerFullyPaid = $notice->customer->isFullyPaid();
+                                            
+                                            // Determine display status based on customer's overall payment status
+                                            if ($customerFullyPaid) {
+                                                $displayStatus = 'paid';
+                                                $statusLabel = 'Paid';
+                                            } elseif ($notice->status === 'overdue') {
+                                                $displayStatus = 'overdue';
+                                                $statusLabel = 'Overdue';
+                                            } else {
+                                                $displayStatus = 'pending';
+                                                $statusLabel = 'Pending';
+                                            }
+                                        @endphp
+                                        
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                            @if($notice->status === 'paid') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                            @elseif($notice->status === 'overdue') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                            @if($displayStatus === 'paid') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                            @elseif($displayStatus === 'overdue') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
                                             @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @endif">
-                                            {{ $notice->status_label }}
+                                            {{ $statusLabel }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
