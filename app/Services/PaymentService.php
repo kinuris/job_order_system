@@ -268,12 +268,32 @@ class PaymentService
         $dueThisWeek = PaymentNotice::dueWithin(7)->count();
         $totalUnpaid = PaymentNotice::whereIn('status', ['pending', 'overdue'])->sum('amount_due');
         $totalCollected = CustomerPayment::confirmed()->whereMonth('payment_date', Carbon::now())->sum('amount');
+        
+        // Count customers with unpaid months
+        $customersWithUnpaid = Customer::whereNotNull('plan_installed_at')
+            ->where('plan_status', 'active')
+            ->get()
+            ->filter(function ($customer) {
+                return $customer->getUnpaidMonths() > 0;
+            })
+            ->count();
+        
+        // Total pending notices
+        $pendingNotices = PaymentNotice::where('status', 'pending')->count();
+        
+        // Average monthly collection (last 3 months)
+        $avgMonthlyCollection = CustomerPayment::confirmed()
+            ->where('payment_date', '>=', Carbon::now()->subMonths(3))
+            ->avg('amount') ?? 0;
 
         return [
             'overdue_notices' => $overdueNotices,
             'due_this_week' => $dueThisWeek,
             'total_unpaid' => $totalUnpaid,
             'monthly_collected' => $totalCollected,
+            'customers_with_unpaid' => $customersWithUnpaid,
+            'pending_notices' => $pendingNotices,
+            'avg_monthly_collection' => $avgMonthlyCollection,
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Customer;
 use App\Models\JobOrder;
 use App\Models\JobOrderMessage;
+use App\Services\PaymentService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -64,11 +65,24 @@ class Dashboard extends Component
 
     private function loadAdminData()
     {
+        // Get payment statistics
+        $paymentService = app(PaymentService::class);
+        $paymentStats = $paymentService->getDashboardStats();
+        
         $this->stats = [
             'total_customers' => Customer::count(),
             'total_job_orders' => JobOrder::count(),
             'pending_job_orders' => JobOrder::where('status', 'pending_dispatch')->count(),
             'in_progress_job_orders' => JobOrder::where('status', 'in_progress')->count(),
+            'completed_job_orders' => JobOrder::where('status', 'completed')->count(),
+            // Add payment statistics
+            'overdue_notices' => $paymentStats['overdue_notices'],
+            'due_this_week' => $paymentStats['due_this_week'],
+            'total_unpaid' => $paymentStats['total_unpaid'],
+            'monthly_collected' => $paymentStats['monthly_collected'],
+            'customers_with_unpaid' => $paymentStats['customers_with_unpaid'] ?? 0,
+            'pending_notices' => $paymentStats['pending_notices'] ?? 0,
+            'avg_monthly_collection' => $paymentStats['avg_monthly_collection'] ?? 0,
         ];
 
         $this->recent_job_orders = JobOrder::with(['customer', 'technician.user'])
