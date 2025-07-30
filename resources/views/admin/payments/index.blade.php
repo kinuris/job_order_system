@@ -95,37 +95,85 @@
 
         {{-- Filters --}}
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
-            <form method="GET" action="{{ route('admin.payments.index') }}" class="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-3 sm:gap-4">
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                    <select name="status" id="status" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base" onchange="this.form.submit()">
-                        <option value="">All Statuses</option>
-                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>Overdue</option>
-                        <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid</option>
-                    </select>
+            <form method="GET" action="{{ route('admin.payments.index') }}" class="space-y-4">
+                <!-- First Row: Status, Customer Search, Plan Filter -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                        <select name="status" id="status" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>Overdue</option>
+                            <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="customer_search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Search</label>
+                        <input type="text" name="customer_search" id="customer_search" value="{{ request('customer_search') }}" placeholder="Search by name, email, or phone..." class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                    </div>
+
+                    <div>
+                        <label for="plan_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plan Filter</label>
+                        <select name="plan_filter" id="plan_filter" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                            <option value="">All Plans</option>
+                            @foreach(\App\Models\Plan::all() as $plan)
+                                <option value="{{ $plan->id }}" {{ request('plan_filter') == $plan->id ? 'selected' : '' }}>{{ $plan->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="customer_search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Search</label>
-                    <input type="text" name="customer_search" id="customer_search" value="{{ request('customer_search') }}" placeholder="Search customers..." class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                <!-- Second Row: Date Range Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="due_date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date From</label>
+                        <input type="date" name="due_date_from" id="due_date_from" value="{{ request('due_date_from') }}" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                    </div>
+
+                    <div>
+                        <label for="due_date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date To</label>
+                        <input type="date" name="due_date_to" id="due_date_to" value="{{ request('due_date_to') }}" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                    </div>
+
+                    <div>
+                        <label for="amount_min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min Amount</label>
+                        <input type="number" name="amount_min" id="amount_min" value="{{ request('amount_min') }}" placeholder="0.00" step="0.01" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                    </div>
+
+                    <div>
+                        <label for="amount_max" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Amount</label>
+                        <input type="number" name="amount_max" id="amount_max" value="{{ request('amount_max') }}" placeholder="0.00" step="0.01" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                    </div>
                 </div>
 
-                <div class="flex items-end">
-                    <label class="flex items-center">
-                        <input type="checkbox" name="overdue_only" value="1" {{ request('overdue_only') ? 'checked' : '' }} class="w-4 h-4 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" onchange="this.form.submit()">
-                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Overdue only</span>
-                    </label>
-                </div>
-                
-                {{-- Mobile Search Button --}}
-                <div class="sm:hidden">
-                    <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        Search
-                    </button>
+                <!-- Third Row: Checkboxes and Buttons -->
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="overdue_only" value="1" {{ request('overdue_only') ? 'checked' : '' }} class="w-4 h-4 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Overdue only</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="has_notices" value="1" {{ request('has_notices') ? 'checked' : '' }} class="w-4 h-4 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Has notices</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Apply Filters
+                        </button>
+                        <a href="{{ route('admin.payments.index') }}" class="inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Clear
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>

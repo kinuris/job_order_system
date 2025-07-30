@@ -45,12 +45,24 @@ class Customer extends Model
     ];
 
     /**
-     * Get the full name of the customer.
+     * Get the customer's full name.
      */
     public function getFullNameAttribute(): string
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return trim($this->first_name . ' ' . $this->last_name);
     }
+
+    /**
+     * Phone accessor for backward compatibility.
+     */
+    public function getPhoneAttribute(): string
+    {
+        return $this->phone_number;
+    }
+
+    /**
+     * Relationships
+     */
 
     /**
      * Get the plan for the customer.

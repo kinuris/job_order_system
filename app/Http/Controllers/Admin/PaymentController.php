@@ -29,24 +29,62 @@ class PaymentController extends Controller
         // Get payment notices with filters
         $query = PaymentNotice::with(['customer', 'plan']);
         
-        if ($request->has('status') && $request->status !== '') {
+        // Status filter
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         
-        if ($request->has('overdue_only') && $request->overdue_only) {
+        // Overdue only filter
+        if ($request->boolean('overdue_only')) {
             $query->overdue();
         }
         
-        if ($request->has('customer_search') && $request->customer_search !== '') {
+                                // Customer search (name, email, phone)
+        if ($request->filled('customer_search')) {
             $searchTerm = $request->customer_search;
-            $query->whereHas('customer', function ($q) use ($searchTerm) {
-                $q->where('first_name', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('last_name', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('email', 'LIKE', "%{$searchTerm}%");
+            $query->whereHas('customer', function ($customerQuery) use ($searchTerm) {
+                $customerQuery->where(function ($q) use ($searchTerm) {
+                    $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$searchTerm}%"])
+                      ->orWhere('email', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%");
+                });
             });
+        }
+
+        // Plan filter
+        if ($request->filled('plan_filter')) {
+            $query->whereHas('customer', function ($q) use ($request) {
+                $q->where('plan_id', $request->plan_filter);
+            });
+        }
+
+        // Due date range filters
+        if ($request->filled('due_date_from')) {
+            $query->where('due_date', '>=', $request->due_date_from);
+        }
+
+        if ($request->filled('due_date_to')) {
+            $query->where('due_date', '<=', $request->due_date_to);
+        }
+
+        // Amount range filters
+        if ($request->filled('amount_min')) {
+            $query->where('amount', '>=', $request->amount_min);
+        }
+
+        if ($request->filled('amount_max')) {
+            $query->where('amount', '<=', $request->amount_max);
+        }
+
+        // Has notices filter (active payment notices)
+        if ($request->boolean('has_notices')) {
+            $query->whereIn('status', ['pending', 'sent']);
         }
         
         $notices = $query->orderBy('due_date', 'asc')->paginate(15);
+        
+        // Preserve query parameters in pagination
+        $notices->appends($request->query());
         
         // Calculate unpaid months for each customer using the model method
         $customerUnpaidCounts = [];
@@ -177,18 +215,46 @@ class PaymentController extends Controller
     /**
      * Show customer payment history.
      */
-    public function customer(Customer $customer)
+    public function customer(Customer $customer, Request $request)
     {
-        $customer->load(['plan', 'payments.plan', 'paymentNotices']);
+        $customer->load(['plan']);
         
-        $payments = $customer->payments()
-            ->orderBy('payment_date', 'desc')
-            ->paginate(10);
-            
-        $notices = $customer->paymentNotices()
-            ->orderBy('due_date', 'desc')
-            ->paginate(10);
-            
+        // Get payments with filters
+        $paymentsQuery = $customer->payments()->with('plan');
+        
+        // Payment status filter
+        if ($request->filled('payment_status')) {
+            $paymentsQuery->where('status', $request->payment_status);
+        }
+        
+        // Payment method filter
+        if ($request->filled('payment_method')) {
+            $paymentsQuery->where('payment_method', $request->payment_method);
+        }
+        
+        // Date range filter
+        if ($request->filled('date_from')) {
+            $paymentsQuery->where('payment_date', '>=', $request->date_from);
+        }
+        
+        if ($request->filled('date_to')) {
+            $paymentsQuery->where('payment_date', '<=', $request->date_to);
+        }
+        
+        $payments = $paymentsQuery->orderBy('payment_date', 'desc')->paginate(10);
+        $payments->appends($request->query());
+        
+        // Get payment notices with filters
+        $noticesQuery = $customer->paymentNotices();
+        
+        // Notice status filter
+        if ($request->filled('notice_status')) {
+            $noticesQuery->where('status', $request->notice_status);
+        }
+        
+        $notices = $noticesQuery->orderBy('due_date', 'desc')->paginate(10);
+        $notices->appends($request->query());
+        
         $summary = $this->paymentService->getCustomerPaymentSummary($customer);
         
         return view('admin.payments.customer', compact('customer', 'payments', 'notices', 'summary'));
