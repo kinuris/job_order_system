@@ -101,12 +101,86 @@
 
         {{-- Recent Payments --}}
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Recent Payments</h3>
             </div>
             
             @if($payments->count() > 0)
-                <div class="overflow-x-auto">
+                {{-- Mobile Cards View (Hidden on Desktop) --}}
+                <div class="block lg:hidden space-y-3 p-4">
+                    @foreach($payments as $payment)
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                            {{-- Payment Header --}}
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {{ $payment->formatted_amount }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $payment->payment_date->format('M j, Y') }}
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    @if($payment->status === 'confirmed') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                    @elseif($payment->status === 'pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                    @else bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 @endif">
+                                    {{ $payment->status_label }}
+                                </span>
+                            </div>
+
+                            {{-- Payment Details --}}
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Period:</span>
+                                    <span class="text-gray-900 dark:text-gray-100 font-medium">
+                                        {{ $payment->formatted_discrete_months }}
+                                    </span>
+                                </div>
+                                @if($payment->period_months > 1)
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 dark:text-gray-400">Calculation:</span>
+                                        <span class="text-gray-900 dark:text-gray-100">
+                                            {{ $payment->period_months }} months × ₱{{ number_format($payment->plan_rate, 2) }}
+                                        </span>
+                                    </div>
+                                    @if(abs($payment->amount - $payment->calculated_amount) > 0.01)
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500 dark:text-gray-400">Expected:</span>
+                                            <span class="text-blue-600 dark:text-blue-400">
+                                                ₱{{ number_format($payment->calculated_amount, 2) }}
+                                            </span>
+                                        </div>
+                                    @endif
+                                @endif
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Method:</span>
+                                    <span class="text-gray-900 dark:text-gray-100">{{ $payment->payment_method_label }}</span>
+                                </div>
+                                @if($payment->reference_number)
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500 dark:text-gray-400">Reference:</span>
+                                        <span class="text-gray-900 dark:text-gray-100 font-mono text-xs">{{ $payment->reference_number }}</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- Action Button --}}
+                            <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                <a href="{{ route('admin.payments.show', $payment) }}" 
+                                   class="inline-flex items-center justify-center w-full px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-medium text-xs text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Desktop Table View (Hidden on Mobile) --}}
+                <div class="hidden lg:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-900">
                             <tr>

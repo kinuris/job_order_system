@@ -94,11 +94,11 @@
         </div>
 
         {{-- Filters --}}
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
-            <form method="GET" action="{{ route('admin.payments.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <form method="GET" action="{{ route('admin.payments.index') }}" class="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-3 sm:gap-4">
                 <div>
                     <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                    <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" onchange="this.form.submit()">
+                    <select name="status" id="status" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base" onchange="this.form.submit()">
                         <option value="">All Statuses</option>
                         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="overdue" {{ request('status') === 'overdue' ? 'selected' : '' }}>Overdue</option>
@@ -108,22 +108,121 @@
 
                 <div>
                     <label for="customer_search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Search</label>
-                    <input type="text" name="customer_search" id="customer_search" value="{{ request('customer_search') }}" placeholder="Search customers..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    <input type="text" name="customer_search" id="customer_search" value="{{ request('customer_search') }}" placeholder="Search customers..." class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
                 </div>
 
                 <div class="flex items-end">
                     <label class="flex items-center">
-                        <input type="checkbox" name="overdue_only" value="1" {{ request('overdue_only') ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" onchange="this.form.submit()">
+                        <input type="checkbox" name="overdue_only" value="1" {{ request('overdue_only') ? 'checked' : '' }} class="w-4 h-4 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" onchange="this.form.submit()">
                         <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Overdue only</span>
                     </label>
+                </div>
+                
+                {{-- Mobile Search Button --}}
+                <div class="sm:hidden">
+                    <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Search
+                    </button>
                 </div>
             </form>
         </div>
 
-        {{-- Payment Notices Table --}}
+        {{-- Payment Notices Table/Cards --}}
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             @if($notices->count() > 0)
-                <div class="overflow-x-auto">
+                {{-- Mobile Cards View (Hidden on Desktop) --}}
+                <div class="block lg:hidden space-y-3 p-4">
+                    @foreach($notices as $notice)
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                            {{-- Customer Info Header --}}
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                        {{ $notice->customer->full_name }}
+                                    </h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {{ $notice->customer->email }}
+                                    </p>
+                                </div>
+                                @php
+                                    $customerFullyPaid = $notice->customer->isFullyPaid();
+                                    
+                                    // Determine display status based on customer's overall payment status
+                                    if ($customerFullyPaid) {
+                                        $displayStatus = 'paid';
+                                        $statusLabel = 'Paid';
+                                    } elseif ($notice->status === 'overdue') {
+                                        $displayStatus = 'overdue';
+                                        $statusLabel = 'Overdue';
+                                    } else {
+                                        $displayStatus = 'pending';
+                                        $statusLabel = 'Pending';
+                                    }
+                                @endphp
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    @if($displayStatus === 'paid') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                    @elseif($displayStatus === 'overdue') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                    @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @endif">
+                                    {{ $statusLabel }}
+                                </span>
+                            </div>
+
+                            {{-- Payment Details Grid --}}
+                            <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Plan:</span>
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">{{ $notice->plan->name }}</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Amount Due:</span>
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">{{ $notice->formatted_amount_due }}</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Due Date:</span>
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">
+                                        {{ $notice->due_date->format('M j, Y') }}
+                                        @if($notice->days_overdue > 0)
+                                            <span class="text-red-600 dark:text-red-400">({{ $notice->days_overdue }}d overdue)</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Unpaid Months:</span>
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">
+                                        {{ $customerUnpaidCounts[$notice->customer_id] ?? 0 }} months
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Action Buttons --}}
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <a href="{{ route('admin.payments.customer', $notice->customer) }}" 
+                                   class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-medium text-xs text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    View History
+                                </a>
+                                @if(($customerUnpaidCounts[$notice->customer_id] ?? 0) > 0)
+                                    <a href="{{ route('admin.payments.create', ['customer_id' => $notice->customer->id]) }}" 
+                                       class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-medium text-xs text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                        <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        Record Payment
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Desktop Table View (Hidden on Mobile) --}}
+                <div class="hidden lg:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-900">
                             <tr>
@@ -232,6 +331,17 @@
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Generate notices to track customer payments.</p>
                 </div>
             @endif
+        </div>
+
+        {{-- Mobile Floating Action Button --}}
+        <div class="fixed bottom-6 right-6 lg:hidden z-50">
+            <a href="{{ route('admin.payments.create') }}" 
+               class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span class="sr-only">Record Payment</span>
+            </a>
         </div>
     </div>
 </x-layouts.app>

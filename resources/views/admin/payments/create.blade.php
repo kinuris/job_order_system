@@ -31,7 +31,7 @@
                         Customer <span class="text-red-500">*</span>
                     </label>
                     <select name="customer_id" id="customer_id" required 
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('customer_id') border-red-500 @enderror">
+                            class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('customer_id') border-red-500 @enderror text-base">
                         <option value="">Select a customer</option>
                         @foreach($customers as $cust)
                             <option value="{{ $cust->id }}" 
@@ -53,9 +53,9 @@
                 </div>
 
                 {{-- Customer Info Display --}}
-                <div id="customer-info" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div id="customer-info" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
                     <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">Customer Information</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                         <div>
                             <span class="text-blue-700 dark:text-blue-300">Plan:</span>
                             <span id="display-plan" class="text-blue-900 dark:text-blue-100 font-medium ml-1"></span>
@@ -67,39 +67,24 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Payment Amount --}}
-                    <div>
-                        <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Payment Amount <span class="text-red-500">*</span>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 dark:text-gray-400 sm:text-sm">₱</span>
-                            </div>
-                            <input type="number" name="amount" id="amount" step="0.01" min="0.01" required
-                                   value="{{ old('amount') }}"
-                                   class="block w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('amount') border-red-500 @enderror"
-                                   placeholder="0.00">
+                {{-- Payment Amount --}}
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Payment Amount <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm sm:text-base">₱</span>
                         </div>
-                        @error('amount')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
+                        <input type="number" name="amount" id="amount" step="0.01" min="0.01" required
+                               value="{{ old('amount') }}"
+                               class="block w-full pl-8 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('amount') border-red-500 @enderror text-base"
+                               placeholder="0.00"
+                               inputmode="decimal">
                     </div>
-
-                    {{-- Payment Date --}}
-                    <div>
-                        <label for="payment_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Payment Date <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" name="payment_date" id="payment_date" required
-                               value="{{ old('payment_date', now()->format('Y-m-d')) }}"
-                               max="{{ now()->format('Y-m-d') }}"
-                               class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('payment_date') border-red-500 @enderror">
-                        @error('payment_date')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    @error('amount')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 {{-- Months Covered Selection --}}
@@ -107,14 +92,14 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                         Months Covered <span class="text-red-500">*</span>
                     </label>
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
+                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                             Select up to which month this payment should cover. The system will calculate the total months and amount.
                         </p>
-                        <div id="months-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        <div id="months-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2">
                             <!-- Months will be populated by JavaScript -->
                         </div>
-                        <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                        <div class="mt-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                             <span id="months-summary">No months selected</span>
                         </div>
                     </div>
@@ -124,7 +109,8 @@
                     @enderror
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Mobile-optimized Two Column Layout --}}
+                <div class="grid grid-cols-1 gap-4 sm:gap-6">
                     {{-- Payment Date --}}
                     <div>
                         <label for="payment_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -133,7 +119,7 @@
                         <input type="date" name="payment_date" id="payment_date" required
                                value="{{ old('payment_date', now()->format('Y-m-d')) }}"
                                max="{{ now()->format('Y-m-d') }}"
-                               class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('payment_date') border-red-500 @enderror">
+                               class="block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('payment_date') border-red-500 @enderror text-base">
                         @error('payment_date')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -145,7 +131,7 @@
                             Payment Method <span class="text-red-500">*</span>
                         </label>
                         <select name="payment_method" id="payment_method" required
-                                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('payment_method') border-red-500 @enderror">
+                                class="block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('payment_method') border-red-500 @enderror text-base">
                             <option value="">Select payment method</option>
                             @foreach(\App\Models\CustomerPayment::PAYMENT_METHODS as $key => $label)
                                 <option value="{{ $key }}" {{ old('payment_method') === $key ? 'selected' : '' }}>
@@ -291,18 +277,18 @@
                     const isSelected = !month.isPaid && month.index <= selectedMonthIndex;
                     const isPastDue = month.isPast && !month.isPaid && !isSelected;
                     
-                    let buttonClass = 'px-3 py-2 text-sm font-medium rounded-lg border transition-colors ';
+                    let buttonClass = 'px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors touch-manipulation ';
                     
                     if (month.isPaid) {
                         // Paid months: green background, clearly unselectable
                         buttonClass += 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300 cursor-not-allowed opacity-75';
                         button.disabled = true;
                     } else if (isSelected) {
-                        buttonClass += 'bg-blue-600 border-blue-600 text-white';
+                        buttonClass += 'bg-blue-600 border-blue-600 text-white active:bg-blue-700';
                     } else if (isPastDue) {
-                        buttonClass += 'bg-red-100 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400';
+                        buttonClass += 'bg-red-100 border-red-300 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 active:bg-red-200 dark:active:bg-red-900/40';
                     } else {
-                        buttonClass += 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700';
+                        buttonClass += 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600';
                     }
                     
                     button.className = buttonClass;
