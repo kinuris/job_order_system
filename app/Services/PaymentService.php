@@ -439,6 +439,284 @@ class PaymentService
     }
 
     /**
+     * Get payment notices with sorting options.
+     */
+    public function getPaymentNoticesWithSorting(array $options = [])
+    {
+        $sortBy = $options['sort_by'] ?? 'customer_name';
+        $sortDirection = $options['sort_direction'] ?? 'asc';
+        $status = $options['status'] ?? null;
+        $customerSearch = $options['customer_search'] ?? null;
+        $customerId = $options['customer_id'] ?? null;
+        $planId = $options['plan_id'] ?? null;
+        $dueDateFrom = $options['due_date_from'] ?? null;
+        $dueDateTo = $options['due_date_to'] ?? null;
+        $amountMin = $options['amount_min'] ?? null;
+        $amountMax = $options['amount_max'] ?? null;
+        $overdueOnly = $options['overdue_only'] ?? false;
+        $hasNotices = $options['has_notices'] ?? false;
+
+        // Get payment notices with customer relationship
+        $query = PaymentNotice::with(['customer' => function ($query) {
+            $query->with('plan');
+        }, 'plan']);
+
+        // Apply filters
+        if ($status && is_array($status) && !empty($status)) {
+            $query->whereIn('status', $status);
+        } elseif ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($overdueOnly) {
+            $query->where('due_date', '<', now());
+        }
+
+        if ($customerSearch) {
+            $query->whereHas('customer', function ($customerQuery) use ($customerSearch) {
+                $customerQuery->where(function ($q) use ($customerSearch) {
+                    $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$customerSearch}%"])
+                      ->orWhere('email', 'LIKE', "%{$customerSearch}%")
+                      ->orWhere('phone_number', 'LIKE', "%{$customerSearch}%");
+                });
+            });
+        }
+
+        if ($customerId) {
+            $query->where('customer_id', $customerId);
+        }
+
+        if ($planId) {
+            $query->where('plan_id', $planId);
+        }
+
+        if ($dueDateFrom) {
+            $query->where('due_date', '>=', $dueDateFrom);
+        }
+
+        if ($dueDateTo) {
+            $query->where('due_date', '<=', $dueDateTo);
+        }
+
+        if ($amountMin) {
+            $query->where('amount_due', '>=', $amountMin);
+        }
+
+        if ($amountMax) {
+            $query->where('amount_due', '<=', $amountMax);
+        }
+
+        if ($hasNotices) {
+            $query->whereIn('status', ['pending', 'sent']);
+        }
+
+        $notices = $query->get();
+
+        // Sort the collection based on the criteria
+        if ($sortBy === 'customer_name' || $sortBy === 'name') {
+            $notices = $notices->sortBy(function ($notice) {
+                return strtolower($notice->customer->full_name ?? '');
+            }, SORT_REGULAR, $sortDirection === 'desc');
+        } elseif ($sortBy === 'unpaid_months') {
+            $notices = $notices->sortBy(function ($notice) {
+                return $notice->customer->getUnpaidMonths();
+            }, SORT_NUMERIC, $sortDirection === 'desc');
+        } elseif ($sortBy === 'due_date') {
+            $notices = $notices->sortBy('due_date', SORT_REGULAR, $sortDirection === 'desc');
+        } elseif ($sortBy === 'amount') {
+            $notices = $notices->sortBy('amount_due', SORT_NUMERIC, $sortDirection === 'desc');
+        }
+
+        return $notices;
+    }
+
+    /**
+     * Get payment notices with sorting and additional metadata.
+     */
+    public function getPaymentNoticesWithMetadata(array $options = []): array
+    {
+        $notices = $this->getPaymentNoticesWithSorting($options);
+
+        // Calculate unpaid counts for each customer
+        $customerUnpaidCounts = [];
+        foreach ($notices as $notice) {
+            $customerId = $notice->customer_id;
+            if (!isset($customerUnpaidCounts[$customerId])) {
+                $customerUnpaidCounts[$customerId] = $notice->customer->getUnpaidMonths();
+            }
+        }
+
+        return [
+            'notices' => $notices,
+            'customer_unpaid_counts' => $customerUnpaidCounts
+        ];
+    }
+
+    /**
+     * Get customers with payment notices, sorted by name or unpaid months.
+     */
+    public function getCustomersWithNoticesSorted(array $options = []): \Illuminate\Database\Eloquent\Collection
+    {
+        $sortBy = $options['sort_by'] ?? 'name'; // 'name' or 'unpaid_months'
+        $sortDirection = $options['sort_direction'] ?? 'asc';
+        $hasUnpaidOnly = $options['has_unpaid_only'] ?? false;
+
+        $customers = Customer::with(['plan', 'paymentNotices' => function ($query) {
+                $query->whereIn('status', ['pending', 'overdue']);
+            }])
+            ->whereNotNull('plan_installed_at')
+            ->whereHas('plan')
+            ->get();
+
+        // Filter customers with unpaid notices only if requested
+        if ($hasUnpaidOnly) {
+            $customers = $customers->filter(function ($customer) {
+                return $customer->paymentNotices->isNotEmpty();
+            });
+        }
+
+        // Sort the collection
+        if ($sortBy === 'name') {
+            $customers = $customers->sortBy(function ($customer) {
+                return strtolower($customer->full_name);
+            }, SORT_REGULAR, $sortDirection === 'desc');
+        } elseif ($sortBy === 'unpaid_months') {
+            $customers = $customers->sortBy(function ($customer) {
+                return $customer->getUnpaidMonths();
+            }, SORT_NUMERIC, $sortDirection === 'desc');
+        }
+
+        return $customers;
+    }
+
+    /**
+     * Get payment notices summary with sorting and grouping options.
+     */
+    public function getPaymentNoticesSummary(array $options = []): array
+    {
+        $sortBy = $options['sort_by'] ?? 'name';
+        $sortDirection = $options['sort_direction'] ?? 'asc';
+        $groupBy = $options['group_by'] ?? null; // 'status', 'overdue_range', null
+        $statusFilter = $options['status_filter'] ?? null;
+
+        $customers = $this->getCustomersWithNoticesSorted([
+            'sort_by' => $sortBy,
+            'sort_direction' => $sortDirection,
+            'has_unpaid_only' => true
+        ]);
+
+        $summary = [
+            'total_customers' => $customers->count(),
+            'total_notices' => 0,
+            'total_amount' => 0,
+            'customers' => []
+        ];
+
+        foreach ($customers as $customer) {
+            $unpaidNotices = $customer->paymentNotices;
+            
+            if ($statusFilter) {
+                $unpaidNotices = $unpaidNotices->where('status', $statusFilter);
+            }
+
+            if ($unpaidNotices->isNotEmpty()) {
+                $customerData = [
+                    'id' => $customer->id,
+                    'name' => $customer->full_name,
+                    'unpaid_months' => $customer->getUnpaidMonths(),
+                    'notices_count' => $unpaidNotices->count(),
+                    'total_amount' => $unpaidNotices->sum('amount_due'),
+                    'oldest_notice_date' => $unpaidNotices->min('due_date'),
+                    'notices' => $unpaidNotices->map(function ($notice) {
+                        return [
+                            'id' => $notice->id,
+                            'due_date' => $notice->due_date,
+                            'amount_due' => $notice->amount_due,
+                            'status' => $notice->status,
+                            'days_overdue' => $notice->days_overdue ?? 0
+                        ];
+                    })
+                ];
+
+                $summary['customers'][] = $customerData;
+                $summary['total_notices'] += $unpaidNotices->count();
+                $summary['total_amount'] += $unpaidNotices->sum('amount_due');
+            }
+        }
+
+        // Apply grouping if requested
+        if ($groupBy) {
+            $summary['grouped'] = $this->groupNoticesSummary($summary['customers'], $groupBy);
+        }
+
+        return $summary;
+    }
+
+    /**
+     * Group notices summary by specified criteria.
+     */
+    protected function groupNoticesSummary(array $customers, string $groupBy): array
+    {
+        $grouped = [];
+
+        foreach ($customers as $customer) {
+            $groupKey = $this->getGroupKey($customer, $groupBy);
+            
+            if (!isset($grouped[$groupKey])) {
+                $grouped[$groupKey] = [
+                    'customers' => [],
+                    'total_notices' => 0,
+                    'total_amount' => 0,
+                    'customer_count' => 0
+                ];
+            }
+
+            $grouped[$groupKey]['customers'][] = $customer;
+            $grouped[$groupKey]['total_notices'] += $customer['notices_count'];
+            $grouped[$groupKey]['total_amount'] += $customer['total_amount'];
+            $grouped[$groupKey]['customer_count']++;
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Get group key for grouping notices.
+     */
+    protected function getGroupKey(array $customer, string $groupBy): string
+    {
+        switch ($groupBy) {
+            case 'unpaid_months':
+                $months = $customer['unpaid_months'];
+                if ($months === 0) return '0 months';
+                if ($months === 1) return '1 month';
+                if ($months <= 3) return '2-3 months';
+                if ($months <= 6) return '4-6 months';
+                return '6+ months';
+
+            case 'overdue_range':
+                $oldestDate = Carbon::parse($customer['oldest_notice_date']);
+                $daysOverdue = $oldestDate->diffInDays(Carbon::now());
+                
+                if ($daysOverdue <= 0) return 'Current';
+                if ($daysOverdue <= 30) return '1-30 days overdue';
+                if ($daysOverdue <= 60) return '31-60 days overdue';
+                if ($daysOverdue <= 90) return '61-90 days overdue';
+                return '90+ days overdue';
+
+            case 'amount_range':
+                $amount = $customer['total_amount'];
+                if ($amount < 1000) return 'Under ₱1,000';
+                if ($amount < 5000) return '₱1,000 - ₱5,000';
+                if ($amount < 10000) return '₱5,000 - ₱10,000';
+                return '₱10,000+';
+
+            default:
+                return 'Other';
+        }
+    }
+
+    /**
      * Get dashboard statistics.
      */
     public function getDashboardStats(): array

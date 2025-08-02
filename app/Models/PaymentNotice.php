@@ -143,4 +143,41 @@ class PaymentNotice extends Model
         return $query->where('due_date', '<=', Carbon::now()->addDays($days))
                     ->where('status', 'pending');
     }
+
+    /**
+     * Scope for sorting by customer name.
+     */
+    public function scopeOrderByCustomerName($query, $direction = 'asc')
+    {
+        return $query->join('customers', 'payment_notices.customer_id', '=', 'customers.id')
+                    ->orderBy('customers.first_name', $direction)
+                    ->orderBy('customers.last_name', $direction)
+                    ->select('payment_notices.*');
+    }
+
+    /**
+     * Scope for filtering by status array.
+     */
+    public function scopeWhereStatusIn($query, array $statuses)
+    {
+        return $query->whereIn('status', $statuses);
+    }
+
+    /**
+     * Scope for filtering by date range.
+     */
+    public function scopeWhereDueBetween($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('due_date', [$startDate, $endDate]);
+    }
+
+    /**
+     * Scope for getting notices with customer details.
+     */
+    public function scopeWithCustomerDetails($query)
+    {
+        return $query->with(['customer' => function ($q) {
+            $q->with('plan');
+        }]);
+    }
 }

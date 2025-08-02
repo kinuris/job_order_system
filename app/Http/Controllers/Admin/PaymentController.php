@@ -26,74 +26,34 @@ class PaymentController extends Controller
     {
         $stats = $this->paymentService->getDashboardStats();
         
-        // Get payment notices with filters
-        $query = PaymentNotice::with(['customer', 'plan']);
+        // Always use PaymentService for consistent sorting, defaulting to customer name
+        $filters = [
+            'sort_by' => $request->get('sort_by', 'customer_name'),
+            'sort_direction' => $request->get('sort_direction', 'asc'),
+            'status' => $request->filled('status') ? [$request->get('status')] : null,
+            'customer_search' => $request->get('customer_search'),
+            'plan_id' => $request->get('plan_filter'),
+            'due_date_from' => $request->get('due_date_from'),
+            'due_date_to' => $request->get('due_date_to'),
+            'amount_min' => $request->get('amount_min'),
+            'amount_max' => $request->get('amount_max'),
+            'overdue_only' => $request->boolean('overdue_only'),
+            'has_notices' => $request->boolean('has_notices'),
+        ];
         
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+        $result = $this->paymentService->getPaymentNoticesWithMetadata($filters);
+        $notices = $result['notices'];
+        $customerUnpaidCounts = $result['customer_unpaid_counts'];
         
-        // Overdue only filter
-        if ($request->boolean('overdue_only')) {
-            $query->overdue();
-        }
-        
-                                // Customer search (name, email, phone)
-        if ($request->filled('customer_search')) {
-            $searchTerm = $request->customer_search;
-            $query->whereHas('customer', function ($customerQuery) use ($searchTerm) {
-                $customerQuery->where(function ($q) use ($searchTerm) {
-                    $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$searchTerm}%"])
-                      ->orWhere('email', 'LIKE', "%{$searchTerm}%")
-                      ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%");
-                });
-            });
-        }
-
-        // Plan filter
-        if ($request->filled('plan_filter')) {
-            $query->whereHas('customer', function ($q) use ($request) {
-                $q->where('plan_id', $request->plan_filter);
-            });
-        }
-
-        // Due date range filters
-        if ($request->filled('due_date_from')) {
-            $query->where('due_date', '>=', $request->due_date_from);
-        }
-
-        if ($request->filled('due_date_to')) {
-            $query->where('due_date', '<=', $request->due_date_to);
-        }
-
-        // Amount range filters
-        if ($request->filled('amount_min')) {
-            $query->where('amount', '>=', $request->amount_min);
-        }
-
-        if ($request->filled('amount_max')) {
-            $query->where('amount', '<=', $request->amount_max);
-        }
-
-        // Has notices filter (active payment notices)
-        if ($request->boolean('has_notices')) {
-            $query->whereIn('status', ['pending', 'sent']);
-        }
-        
-        $notices = $query->orderBy('due_date', 'asc')->paginate(15);
-        
-        // Preserve query parameters in pagination
+        // Convert to paginated collection for consistent interface
+        $notices = new \Illuminate\Pagination\LengthAwarePaginator(
+            $notices->forPage(\Illuminate\Pagination\Paginator::resolveCurrentPage(), 15),
+            $notices->count(),
+            15,
+            \Illuminate\Pagination\Paginator::resolveCurrentPage(),
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
         $notices->appends($request->query());
-        
-        // Calculate unpaid months for each customer using the model method
-        $customerUnpaidCounts = [];
-        foreach ($notices as $notice) {
-            $customerId = $notice->customer_id;
-            if (!isset($customerUnpaidCounts[$customerId])) {
-                $customerUnpaidCounts[$customerId] = $notice->customer->getUnpaidMonths();
-            }
-        }
         
         return view('admin.payments.index', compact('stats', 'notices', 'customerUnpaidCounts'));
     }

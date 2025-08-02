@@ -69,4 +69,31 @@ trait UpdatesPaymentNotices
                 : "No old payment notices found to clear."
         ];
     }
+
+    /**
+     * Get payment notices with sorting options.
+     */
+    protected function getPaymentNoticesSorted(array $options = []): \Illuminate\Database\Eloquent\Collection
+    {
+        $paymentService = app(PaymentService::class);
+        return $paymentService->getPaymentNoticesWithSorting($options);
+    }
+
+    /**
+     * Get customers with notices sorted by name or unpaid months.
+     */
+    protected function getCustomersWithNoticesSorted(array $options = []): \Illuminate\Database\Eloquent\Collection
+    {
+        $paymentService = app(PaymentService::class);
+        return $paymentService->getCustomersWithNoticesSorted($options);
+    }
+
+    /**
+     * Get payment notices summary with grouping and sorting.
+     */
+    protected function getPaymentNoticesSummary(array $options = []): array
+    {
+        $paymentService = app(PaymentService::class);
+        return $paymentService->getPaymentNoticesSummary($options);
+    }
 }

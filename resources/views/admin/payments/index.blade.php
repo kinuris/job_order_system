@@ -181,6 +181,49 @@
         {{-- Payment Notices Table/Cards --}}
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             @if($notices->count() > 0)
+                {{-- Sorting Controls --}}
+                <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
+                    <form method="GET" action="{{ route('admin.payments.index') }}" class="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                        {{-- Preserve all existing filter parameters --}}
+                        @foreach(request()->except(['sort_by', 'sort_direction']) as $key => $value)
+                            @if(is_array($value))
+                                @foreach($value as $item)
+                                    <input type="hidden" name="{{ $key }}[]" value="{{ $item }}">
+                                @endforeach
+                            @else
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endif
+                        @endforeach
+                        
+                        <div class="flex flex-col sm:flex-row gap-3 flex-1">
+                            <div class="flex-1">
+                                <label for="sort_by" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Sort By</label>
+                                <select name="sort_by" id="sort_by" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                    <option value="customer_name" {{ request('sort_by', 'customer_name') === 'customer_name' ? 'selected' : '' }}>Customer Name</option>
+                                    <option value="unpaid_months" {{ request('sort_by') === 'unpaid_months' ? 'selected' : '' }}>Unpaid Months</option>
+                                    <option value="due_date" {{ request('sort_by') === 'due_date' ? 'selected' : '' }}>Due Date</option>
+                                    <option value="amount" {{ request('sort_by') === 'amount' ? 'selected' : '' }}>Amount</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <label for="sort_direction" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Direction</label>
+                                <select name="sort_direction" id="sort_direction" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                    <option value="asc" {{ request('sort_direction') === 'asc' ? 'selected' : '' }}>Ascending</option>
+                                    <option value="desc" {{ request('sort_direction') === 'desc' ? 'selected' : '' }}>Descending</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="inline-flex items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-medium text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"></path>
+                            </svg>
+                            Sort
+                        </button>
+                    </form>
+                </div>
+
                 {{-- Mobile Cards View (Hidden on Desktop) --}}
                 <div class="block lg:hidden space-y-3 p-4">
                     @foreach($notices as $notice)
@@ -274,11 +317,91 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-900">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'customer_name', 'sort_direction' => request('sort_by', 'customer_name') === 'customer_name' && request('sort_direction', 'asc') === 'asc' ? 'desc' : 'asc']) }}" 
+                                       class="group inline-flex items-center hover:text-gray-700 dark:hover:text-gray-300">
+                                        Customer
+                                        @if(request('sort_by', 'customer_name') === 'customer_name')
+                                            @if(request('sort_direction', 'asc') === 'asc')
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @else
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @endif
+                                        @else
+                                            <svg class="ml-1 w-3 h-3 opacity-0 group-hover:opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </a>
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Due Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unpaid Months</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'due_date', 'sort_direction' => request('sort_by') === 'due_date' && request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}" 
+                                       class="group inline-flex items-center hover:text-gray-700 dark:hover:text-gray-300">
+                                        Due Date
+                                        @if(request('sort_by') === 'due_date')
+                                            @if(request('sort_direction') === 'asc')
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @else
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @endif
+                                        @else
+                                            <svg class="ml-1 w-3 h-3 opacity-0 group-hover:opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'amount', 'sort_direction' => request('sort_by') === 'amount' && request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}" 
+                                       class="group inline-flex items-center hover:text-gray-700 dark:hover:text-gray-300">
+                                        Amount
+                                        @if(request('sort_by') === 'amount')
+                                            @if(request('sort_direction') === 'asc')
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @else
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @endif
+                                        @else
+                                            <svg class="ml-1 w-3 h-3 opacity-0 group-hover:opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </a>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'unpaid_months', 'sort_direction' => request('sort_by') === 'unpaid_months' && request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}" 
+                                       class="group inline-flex items-center hover:text-gray-700 dark:hover:text-gray-300">
+                                        Unpaid Months
+                                        @if(request('sort_by') === 'unpaid_months')
+                                            @if(request('sort_direction') === 'asc')
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @else
+                                                <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            @endif
+                                        @else
+                                            <svg class="ml-1 w-3 h-3 opacity-0 group-hover:opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                            </svg>
+                                        @endif
+                                    </a>
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>

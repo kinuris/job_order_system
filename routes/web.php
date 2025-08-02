@@ -73,6 +73,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('payments/update-overdue', [PaymentController::class, 'updateOverdue'])->name('payments.update-overdue');
     Route::patch('payment-notices/{notice}/mark-paid', [PaymentController::class, 'markNoticePaid'])->name('payment-notices.mark-paid');
     Route::patch('payment-notices/{notice}/cancel', [PaymentController::class, 'cancelNotice'])->name('payment-notices.cancel');
+    
+    // Payment notices API routes for sorting and filtering
+    Route::get('api/payment-notices', [\App\Http\Controllers\PaymentNoticeController::class, 'index'])->name('api.payment-notices.index');
+    Route::get('api/payment-notices/customers-summary', [\App\Http\Controllers\PaymentNoticeController::class, 'customersSummary'])->name('api.payment-notices.customers-summary');
+    Route::get('api/payment-notices/statistics', [\App\Http\Controllers\PaymentNoticeController::class, 'statistics'])->name('api.payment-notices.statistics');
+    Route::get('api/payment-notices/customer/{customer}', [\App\Http\Controllers\PaymentNoticeController::class, 'customerNotices'])->name('api.payment-notices.customer');
 });
 
 // Technician routes (for managing their assigned job orders)

@@ -1,6 +1,6 @@
 # Payment Notices Management
 
-This feature provides comprehensive management of payment notices, including automatic updates when installation dates change and flexible clearing capabilities.
+This feature provides comprehensive management of payment notices, including automatic updates when installation dates change, flexible clearing capabilities, and advanced sorting options.
 
 ## Features
 
@@ -22,6 +22,15 @@ Clean up payment notices with flexible filtering options:
 - Clear notices older than a specific date
 - Clear with multiple criteria combinations
 
+### Sorting & Filtering Options
+Advanced sorting and filtering capabilities for payment notices:
+
+- **Sort by Customer Name** (alphabetical A-Z or Z-A)
+- **Sort by Unpaid Months** (lowest to highest or highest to lowest)
+- **Filter by Status** (pending, overdue, paid, cancelled)
+- **Filter by Customer** (specific customer notices)
+- **Group by Categories** (unpaid months ranges, overdue ranges, amount ranges)
+
 ## Usage
 
 ### Manual Updates
@@ -38,6 +47,28 @@ $noticesCreated = $paymentService->updateNoticesForInstallationDateChange($custo
 ```php
 $results = $paymentService->bulkUpdateNoticesForInstallationDateChanges($customerIds);
 // Returns: ['customers_processed' => int, 'total_notices_created' => int, 'errors' => array]
+```
+
+#### Sorting & Filtering Payment Notices
+```php
+// Sort by customer name (A-Z)
+$notices = $paymentService->getPaymentNoticesWithSorting([
+    'sort_by' => 'name',
+    'sort_direction' => 'asc',
+    'status' => ['pending', 'overdue']
+]);
+
+// Sort by unpaid months (highest first)
+$customers = $paymentService->getCustomersWithNoticesSorted([
+    'sort_by' => 'unpaid_months',
+    'sort_direction' => 'desc'
+]);
+
+// Get summary with grouping
+$summary = $paymentService->getPaymentNoticesSummary([
+    'sort_by' => 'name',
+    'group_by' => 'unpaid_months'
+]);
 ```
 
 #### Clear Payment Notices
@@ -86,6 +117,17 @@ class CustomerController extends Controller
         ]);
     }
     
+    public function getNoticesSorted(Request $request)
+    {
+        $notices = $this->getPaymentNoticesSorted([
+            'sort_by' => $request->get('sort_by', 'name'),
+            'sort_direction' => $request->get('sort_direction', 'asc'),
+            'status' => $request->get('status', ['pending', 'overdue'])
+        ]);
+        
+        return response()->json($notices);
+    }
+    
     public function clearNotices(Customer $customer)
     {
         $result = $this->clearCustomerPaymentNotices($customer);
@@ -94,6 +136,79 @@ class CustomerController extends Controller
             'message' => 'Payment notices cleared',
             'result' => $result
         ]);
+    }
+}
+```
+
+## API Endpoints
+
+### Payment Notices with Sorting
+```bash
+# Get notices sorted by customer name
+GET /admin/api/payment-notices?sort_by=name&sort_direction=asc
+
+# Get notices sorted by unpaid months
+GET /admin/api/payment-notices?sort_by=unpaid_months&sort_direction=desc
+
+# Filter by status
+GET /admin/api/payment-notices?status[]=pending&status[]=overdue
+
+# Get customer summary with grouping
+GET /admin/api/payment-notices/customers-summary?sort_by=unpaid_months&group_by=unpaid_months
+
+# Get notices for specific customer
+GET /admin/api/payment-notices/customer/123?sort_by=due_date
+
+# Get payment statistics
+GET /admin/api/payment-notices/statistics
+```
+
+### API Response Examples
+
+#### Sorted Payment Notices
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "customer_id": 123,
+            "due_date": "2025-08-15",
+            "amount_due": 1500.00,
+            "status": "pending",
+            "customer": {
+                "id": 123,
+                "full_name": "Alice Johnson",
+                "plan": {
+                    "name": "Basic Plan",
+                    "monthly_rate": 1500.00
+                }
+            }
+        }
+    ],
+    "total": 10
+}
+```
+
+#### Customer Summary with Grouping
+```json
+{
+    "total_customers": 15,
+    "total_notices": 45,
+    "total_amount": 67500.00,
+    "customers": [...],
+    "grouped": {
+        "1 month": {
+            "customers": [...],
+            "total_notices": 5,
+            "total_amount": 7500.00,
+            "customer_count": 5
+        },
+        "2-3 months": {
+            "customers": [...],
+            "total_notices": 12,
+            "total_amount": 18000.00,
+            "customer_count": 6
+        }
     }
 }
 ```
