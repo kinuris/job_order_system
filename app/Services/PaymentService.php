@@ -178,17 +178,18 @@ class PaymentService
 
         foreach ($customers as $customer) {
             $installationDate = Carbon::parse($customer->plan_installed_at);
+            $installationDay = $installationDate->day;
             
-            // Start from the month after installation
-            $billingMonth = $installationDate->copy()->addMonth()->startOfMonth();
+            // Start from one month after installation, maintaining the same day
+            $billingDate = $this->addMonthsPreservingDay($installationDate, 1, $installationDay);
             
             // Generate notices until current month + 1 (for next month's notice)
             $maxDate = $currentDate->copy()->addMonth()->endOfMonth();
             
-            while ($billingMonth <= $maxDate) {
-                $dueDate = $billingMonth->copy();
-                $periodFrom = $billingMonth->copy()->subMonth();
-                $periodTo = $billingMonth->copy()->subDay();
+            while ($billingDate <= $maxDate) {
+                $dueDate = $billingDate->copy();
+                $periodFrom = $billingDate->copy()->subMonth();
+                $periodTo = $billingDate->copy()->subDay();
                 
                 // Check if notice already exists
                 $existingNotice = $customer->paymentNotices()
@@ -209,10 +210,11 @@ class PaymentService
                     $totalNotices++;
                 }
                 
-                $billingMonth->addMonth();
+                // Move to next month, maintaining the installation day
+                $billingDate = $this->addMonthsPreservingDay($billingDate, 1, $installationDay);
                 
                 // Safety check to prevent infinite loop
-                if ($billingMonth->year > $currentDate->year + 2) {
+                if ($billingDate->year > $currentDate->year + 2) {
                     break;
                 }
             }
@@ -267,7 +269,7 @@ class PaymentService
 
     /**
      * Update payment notices when installation date changes.
-     * This will remove existing notices and regenerate them based on the new installation date.
+     * This will maintain only one current payment notice but adjust its due date to match the new installation pattern.
      */
     public function updateNoticesForInstallationDateChange(Customer $customer): int
     {
@@ -275,59 +277,52 @@ class PaymentService
             return 0;
         }
 
-        // Delete existing unpaid notices for this customer
-        $deletedNotices = $customer->paymentNotices()
-            ->whereIn('status', ['pending', 'overdue'])
-            ->delete();
+        // Delete ALL existing payment notices for this customer
+        $deletedNotices = $customer->paymentNotices()->delete();
 
-        // Regenerate notices from the new installation date
+        // Calculate the next due date based on the new installation date
         $installationDate = Carbon::parse($customer->plan_installed_at);
+        $installationDay = $installationDate->day;
         $currentDate = Carbon::now();
+        
+        // Find the next billing date that preserves the installation day
+        $nextBillingDate = $installationDate->copy();
+        
+        // Keep adding months until we get a future date
+        while ($nextBillingDate <= $currentDate) {
+            $nextBillingDate = $this->addMonthsPreservingDay($nextBillingDate, 1, $installationDay);
+        }
+        
+        // Create period for the notice (typically the month before the due date)
+        $periodFrom = $nextBillingDate->copy()->subMonth()->startOfMonth();
+        $periodTo = $nextBillingDate->copy()->subMonth()->endOfMonth();
+        
+        // Check if this period is already covered by existing payments
+        $isAlreadyPaid = $customer->payments()
+            ->confirmed()
+            ->where(function ($query) use ($periodFrom, $periodTo) {
+                $query->where(function ($q) use ($periodFrom, $periodTo) {
+                    // Payment period overlaps with notice period
+                    $q->where('period_from', '<=', $periodTo)
+                      ->where('period_to', '>=', $periodFrom);
+                });
+            })
+            ->exists();
+        
         $noticesCreated = 0;
         
-        // Start from the month after installation
-        $billingMonth = $installationDate->copy()->addMonth()->startOfMonth();
-        
-        // Generate notices until current month + 1 (for next month's notice)
-        $maxDate = $currentDate->copy()->addMonth()->endOfMonth();
-        
-        while ($billingMonth <= $maxDate) {
-            $dueDate = $billingMonth->copy();
-            $periodFrom = $billingMonth->copy()->subMonth();
-            $periodTo = $billingMonth->copy()->subDay();
+        if (!$isAlreadyPaid) {
+            PaymentNotice::create([
+                'customer_id' => $customer->id,
+                'plan_id' => $customer->plan_id,
+                'due_date' => $nextBillingDate,
+                'period_from' => $periodFrom,
+                'period_to' => $periodTo,
+                'amount_due' => $customer->plan->monthly_rate,
+                'status' => $nextBillingDate < $currentDate ? 'overdue' : 'pending',
+            ]);
             
-            // Check if this period is already covered by existing payments
-            $isAlreadyPaid = $customer->payments()
-                ->confirmed()
-                ->where(function ($query) use ($periodFrom, $periodTo) {
-                    $query->where(function ($q) use ($periodFrom, $periodTo) {
-                        // Payment period overlaps with notice period
-                        $q->where('period_from', '<=', $periodTo)
-                          ->where('period_to', '>=', $periodFrom);
-                    });
-                })
-                ->exists();
-            
-            if (!$isAlreadyPaid) {
-                PaymentNotice::create([
-                    'customer_id' => $customer->id,
-                    'plan_id' => $customer->plan_id,
-                    'due_date' => $dueDate,
-                    'period_from' => $periodFrom,
-                    'period_to' => $periodTo,
-                    'amount_due' => $customer->plan->monthly_rate,
-                    'status' => $dueDate < $currentDate ? 'overdue' : 'pending',
-                ]);
-                
-                $noticesCreated++;
-            }
-            
-            $billingMonth->addMonth();
-            
-            // Safety check to prevent infinite loop
-            if ($billingMonth->year > $currentDate->year + 2) {
-                break;
-            }
+            $noticesCreated = 1;
         }
 
         return $noticesCreated;
@@ -752,5 +747,19 @@ class PaymentService
             'pending_notices' => $pendingNotices,
             'avg_monthly_collection' => $avgMonthlyCollection,
         ];
+    }
+
+    /**
+     * Add months to a date while preserving the day of month.
+     * Handles edge cases like adding months to January 31st.
+     */
+    protected function addMonthsPreservingDay(Carbon $date, int $months, int $preferredDay): Carbon
+    {
+        $newDate = $date->copy()->addMonths($months);
+        
+        // Try to set to the preferred day, but don't exceed the month's days
+        $newDate->day = min($preferredDay, $newDate->daysInMonth);
+        
+        return $newDate;
     }
 }

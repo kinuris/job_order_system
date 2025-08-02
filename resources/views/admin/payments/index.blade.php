@@ -201,8 +201,8 @@
                                 <select name="sort_by" id="sort_by" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
                                     <option value="customer_name" {{ request('sort_by', 'customer_name') === 'customer_name' ? 'selected' : '' }}>Customer Name</option>
                                     <option value="unpaid_months" {{ request('sort_by') === 'unpaid_months' ? 'selected' : '' }}>Unpaid Months</option>
-                                    <option value="due_date" {{ request('sort_by') === 'due_date' ? 'selected' : '' }}>Due Date</option>
-                                    <option value="amount" {{ request('sort_by') === 'amount' ? 'selected' : '' }}>Amount</option>
+                                    <option value="due_date" {{ request('sort_by') === 'due_date' ? 'selected' : '' }}>Latest Paid Date</option>
+                                    <option value="amount" {{ request('sort_by') === 'amount' ? 'selected' : '' }}>Due Date</option>
                                 </select>
                             </div>
                             
@@ -268,15 +268,24 @@
                                     <div class="font-medium text-gray-900 dark:text-gray-100">{{ $notice->plan->name }}</div>
                                 </div>
                                 <div>
-                                    <span class="text-gray-500 dark:text-gray-400">Amount Due:</span>
-                                    <div class="font-medium text-gray-900 dark:text-gray-100">{{ $notice->formatted_amount_due }}</div>
-                                </div>
-                                <div>
                                     <span class="text-gray-500 dark:text-gray-400">Due Date:</span>
                                     <div class="font-medium text-gray-900 dark:text-gray-100">
                                         {{ $notice->due_date->format('M j, Y') }}
                                         @if($notice->days_overdue > 0)
                                             <span class="text-red-600 dark:text-red-400">({{ $notice->days_overdue }}d overdue)</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500 dark:text-gray-400">Latest Paid Date:</span>
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">
+                                        @php
+                                            $latestPaymentDate = $notice->customer->getLatestPaymentDate();
+                                        @endphp
+                                        @if($latestPaymentDate)
+                                            {{ $latestPaymentDate->format('M j, Y') }}
+                                        @else
+                                            <span class="text-gray-500 dark:text-gray-400">No payments</span>
                                         @endif
                                     </div>
                                 </div>
@@ -342,7 +351,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'due_date', 'sort_direction' => request('sort_by') === 'due_date' && request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}" 
                                        class="group inline-flex items-center hover:text-gray-700 dark:hover:text-gray-300">
-                                        Due Date
+                                        Latest Paid Date
                                         @if(request('sort_by') === 'due_date')
                                             @if(request('sort_direction') === 'asc')
                                                 <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -363,7 +372,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'amount', 'sort_direction' => request('sort_by') === 'amount' && request('sort_direction') === 'asc' ? 'desc' : 'asc']) }}" 
                                        class="group inline-flex items-center hover:text-gray-700 dark:hover:text-gray-300">
-                                        Amount
+                                        Due Date
                                         @if(request('sort_by') === 'amount')
                                             @if(request('sort_direction') === 'asc')
                                                 <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -424,6 +433,18 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900 dark:text-gray-100">
+                                            @php
+                                                $latestPaymentDate = $notice->customer->getLatestPaymentDate();
+                                            @endphp
+                                            @if($latestPaymentDate)
+                                                {{ $latestPaymentDate->format('M j, Y') }}
+                                            @else
+                                                <span class="text-gray-500 dark:text-gray-400">No payments</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                             {{ $notice->due_date->format('M j, Y') }}
                                         </div>
                                         @if($notice->days_overdue > 0)
@@ -431,11 +452,6 @@
                                                 {{ $notice->days_overdue }} days overdue
                                             </div>
                                         @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ $notice->formatted_amount_due }}
-                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">

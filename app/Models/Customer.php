@@ -142,13 +142,25 @@ class Customer extends Model
             ->orderBy('period_to', 'desc')
             ->first();
 
+        $installationDay = $this->plan_installed_at->day;
+
         if ($lastPayment) {
             // If there's a payment, next billing is after the last paid period
-            return $lastPayment->period_to->addDay();
+            // Maintain the same day as installation date
+            $nextBilling = $lastPayment->period_to->addDay();
+            
+            // Move to the next month and set to installation day
+            $nextMonth = $nextBilling->copy()->addMonth();
+            $nextMonth->day = min($installationDay, $nextMonth->daysInMonth);
+            
+            return $nextMonth;
         }
 
-        // If no payments, billing starts from installation date
-        return $this->plan_installed_at->addMonth();
+        // If no payments, billing starts one month after installation, same day
+        $nextBilling = $this->plan_installed_at->copy()->addMonth();
+        $nextBilling->day = min($installationDay, $nextBilling->daysInMonth);
+        
+        return $nextBilling;
     }
 
     /**
@@ -221,5 +233,18 @@ class Customer extends Model
     public function isFullyPaid(): bool
     {
         return $this->getUnpaidMonths() === 0;
+    }
+
+    /**
+     * Get the customer's latest payment date.
+     */
+    public function getLatestPaymentDate()
+    {
+        $latestPayment = $this->payments()
+            ->confirmed()
+            ->orderBy('payment_date', 'desc')
+            ->first();
+
+        return $latestPayment ? $latestPayment->payment_date : null;
     }
 }
