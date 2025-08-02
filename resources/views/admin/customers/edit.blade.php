@@ -183,29 +183,7 @@
                 </div>
 
                 {{-- Form Actions --}}
-                <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <div>
-                        @if($customer->jobOrders->count() === 0)
-                            <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" 
-                                  class="inline"
-                                  onsubmit="return confirm('Are you sure you want to delete this customer? This action cannot be undone.')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" 
-                                        class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:bg-red-700 active:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    Delete Customer
-                                </button>
-                            </form>
-                        @else
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                Cannot delete customer with existing job orders ({{ $customer->jobOrders->count() }} jobs)
-                            </p>
-                        @endif
-                    </div>
-                    
+                <div class="flex items-center justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
                     <div class="flex items-center space-x-3">
                         <a href="{{ route('admin.customers.show', $customer) }}" 
                            class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -222,6 +200,39 @@
                 </div>
             </form>
         </div>
+
+        {{-- Delete Customer Section (Separate) --}}
+        @if($customer->jobOrders->count() === 0)
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Danger Zone</h3>
+                    <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                        <p>Once you delete this customer, there is no going back. Please be certain.</p>
+                    </div>
+                    <div class="mt-4">
+                        <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" 
+                              onsubmit="return confirm('Are you sure you want to delete this customer? This action cannot be undone.')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" 
+                                    class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:bg-red-700 active:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                Delete Customer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
 
         {{-- Customer Summary --}}
         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">

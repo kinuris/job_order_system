@@ -150,6 +150,13 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $customer)
     {
+        // Add debugging
+        \Log::info('CustomerController@update called', [
+            'customer_id' => $customer->id,
+            'request_method' => $request->method(),
+            'form_data' => $request->all()
+        ]);
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -168,6 +175,8 @@ class CustomerController extends Controller
 
         $customer->update($validated);
 
+        \Log::info('Customer updated successfully', ['customer_id' => $customer->id]);
+
         return redirect()->route('admin.customers.show', $customer)
             ->with('success', 'Customer updated successfully.');
     }
@@ -177,13 +186,22 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
+        // Add debugging
+        \Log::info('CustomerController@destroy called', [
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->full_name
+        ]);
+
         // Check if customer has any job orders
         if ($customer->jobOrders()->count() > 0) {
+            \Log::warning('Cannot delete customer with job orders', ['customer_id' => $customer->id]);
             return redirect()->route('admin.customers.index')
                 ->with('error', 'Cannot delete customer with existing job orders.');
         }
 
         $customer->delete();
+
+        \Log::info('Customer deleted successfully', ['customer_id' => $customer->id]);
 
         return redirect()->route('admin.customers.index')
             ->with('success', 'Customer deleted successfully.');
