@@ -179,12 +179,53 @@ class CustomerController extends Controller
             $validated['plan_status'] = 'active';
         }
 
+        // Check if installation date has changed and customer has payments
+        $originalInstallationDate = $customer->plan_installed_at;
+        $newInstallationDate = isset($validated['plan_installed_at']) ? Carbon::parse($validated['plan_installed_at']) : null;
+        $installationDateChanged = false;
+
+        if ($originalInstallationDate && $newInstallationDate) {
+            $installationDateChanged = !$originalInstallationDate->equalTo($newInstallationDate);
+        } elseif (!$originalInstallationDate && $newInstallationDate) {
+            $installationDateChanged = true;
+        } elseif ($originalInstallationDate && !$newInstallationDate) {
+            $installationDateChanged = true;
+        }
+
+        // If installation date changed and customer has payments, delete them
+        $deletedPaymentsCount = 0;
+        if ($installationDateChanged && $customer->payments()->confirmed()->count() > 0) {
+            $deletedPaymentsCount = $customer->payments()->delete();
+            
+            \Log::info('Deleted payment records due to installation date change', [
+                'customer_id' => $customer->id,
+                'deleted_payments_count' => $deletedPaymentsCount,
+                'old_installation_date' => $originalInstallationDate,
+                'new_installation_date' => $newInstallationDate
+            ]);
+        }
+
         $customer->update($validated);
+
+        // Update payment notices for installation date change using PaymentService
+        if ($installationDateChanged && $validated['plan_installed_at']) {
+            $paymentService = new PaymentService();
+            $paymentService->updateNoticesForInstallationDateChange($customer);
+            
+            \Log::info('Updated payment notices for installation date change', [
+                'customer_id' => $customer->id
+            ]);
+        }
 
         \Log::info('Customer updated successfully', ['customer_id' => $customer->id]);
 
+        $message = 'Customer updated successfully.';
+        if ($installationDateChanged && $deletedPaymentsCount > 0) {
+            $message .= " Note: {$deletedPaymentsCount} payment record(s) were deleted due to the installation date change.";
+        }
+
         return redirect()->route('admin.customers.show', $customer)
-            ->with('success', 'Customer updated successfully.');
+            ->with('success', $message);
     }
 
     /**
