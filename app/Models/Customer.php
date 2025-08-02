@@ -36,6 +36,22 @@ class Customer extends Model
     ];
 
     /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::updated(function ($customer) {
+            // Check if plan_installed_at has changed and update payment notices
+            if ($customer->wasChanged('plan_installed_at') && $customer->plan_installed_at) {
+                $paymentService = app(\App\Services\PaymentService::class);
+                $paymentService->updateNoticesForInstallationDateChange($customer);
+            }
+        });
+    }
+
+    /**
      * The available plan statuses.
      */
     const PLAN_STATUSES = [

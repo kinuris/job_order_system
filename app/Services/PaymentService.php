@@ -266,6 +266,179 @@ class PaymentService
     }
 
     /**
+     * Update payment notices when installation date changes.
+     * This will remove existing notices and regenerate them based on the new installation date.
+     */
+    public function updateNoticesForInstallationDateChange(Customer $customer): int
+    {
+        if (!$customer->plan_installed_at || !$customer->plan) {
+            return 0;
+        }
+
+        // Delete existing unpaid notices for this customer
+        $deletedNotices = $customer->paymentNotices()
+            ->whereIn('status', ['pending', 'overdue'])
+            ->delete();
+
+        // Regenerate notices from the new installation date
+        $installationDate = Carbon::parse($customer->plan_installed_at);
+        $currentDate = Carbon::now();
+        $noticesCreated = 0;
+        
+        // Start from the month after installation
+        $billingMonth = $installationDate->copy()->addMonth()->startOfMonth();
+        
+        // Generate notices until current month + 1 (for next month's notice)
+        $maxDate = $currentDate->copy()->addMonth()->endOfMonth();
+        
+        while ($billingMonth <= $maxDate) {
+            $dueDate = $billingMonth->copy();
+            $periodFrom = $billingMonth->copy()->subMonth();
+            $periodTo = $billingMonth->copy()->subDay();
+            
+            // Check if this period is already covered by existing payments
+            $isAlreadyPaid = $customer->payments()
+                ->confirmed()
+                ->where(function ($query) use ($periodFrom, $periodTo) {
+                    $query->where(function ($q) use ($periodFrom, $periodTo) {
+                        // Payment period overlaps with notice period
+                        $q->where('period_from', '<=', $periodTo)
+                          ->where('period_to', '>=', $periodFrom);
+                    });
+                })
+                ->exists();
+            
+            if (!$isAlreadyPaid) {
+                PaymentNotice::create([
+                    'customer_id' => $customer->id,
+                    'plan_id' => $customer->plan_id,
+                    'due_date' => $dueDate,
+                    'period_from' => $periodFrom,
+                    'period_to' => $periodTo,
+                    'amount_due' => $customer->plan->monthly_rate,
+                    'status' => $dueDate < $currentDate ? 'overdue' : 'pending',
+                ]);
+                
+                $noticesCreated++;
+            }
+            
+            $billingMonth->addMonth();
+            
+            // Safety check to prevent infinite loop
+            if ($billingMonth->year > $currentDate->year + 2) {
+                break;
+            }
+        }
+
+        return $noticesCreated;
+    }
+
+    /**
+     * Bulk update payment notices for multiple customers after installation date changes.
+     * Useful for administrative operations.
+     */
+    public function bulkUpdateNoticesForInstallationDateChanges(array $customerIds = null): array
+    {
+        $query = Customer::whereNotNull('plan_installed_at')
+            ->whereHas('plan')
+            ->with('plan');
+        
+        if ($customerIds) {
+            $query->whereIn('id', $customerIds);
+        }
+        
+        $customers = $query->get();
+        $results = [
+            'customers_processed' => 0,
+            'total_notices_created' => 0,
+            'errors' => []
+        ];
+        
+        foreach ($customers as $customer) {
+            try {
+                $noticesCreated = $this->updateNoticesForInstallationDateChange($customer);
+                $results['customers_processed']++;
+                $results['total_notices_created'] += $noticesCreated;
+            } catch (\Exception $e) {
+                $results['errors'][] = [
+                    'customer_id' => $customer->id,
+                    'customer_name' => $customer->full_name,
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+        
+        return $results;
+    }
+
+    /**
+     * Clear payment notices based on criteria.
+     */
+    public function clearPaymentNotices(array $criteria = []): array
+    {
+        $query = PaymentNotice::query();
+        
+        // Apply filters based on criteria
+        if (isset($criteria['status'])) {
+            $query->where('status', $criteria['status']);
+        }
+        
+        if (isset($criteria['customer_id'])) {
+            $query->where('customer_id', $criteria['customer_id']);
+        }
+        
+        if (isset($criteria['customer_ids'])) {
+            $query->whereIn('customer_id', $criteria['customer_ids']);
+        }
+        
+        if (isset($criteria['before_date'])) {
+            $query->where('due_date', '<', $criteria['before_date']);
+        }
+        
+        if (isset($criteria['after_date'])) {
+            $query->where('due_date', '>', $criteria['after_date']);
+        }
+        
+        // Get count before deletion
+        $totalCount = $query->count();
+        
+        if ($totalCount === 0) {
+            return [
+                'deleted_count' => 0,
+                'message' => 'No payment notices found matching the criteria.'
+            ];
+        }
+        
+        // Perform deletion
+        $deletedCount = $query->delete();
+        
+        return [
+            'deleted_count' => $deletedCount,
+            'message' => "Successfully deleted {$deletedCount} payment notices."
+        ];
+    }
+
+    /**
+     * Clear all unpaid notices for a customer (pending and overdue).
+     */
+    public function clearUnpaidNoticesForCustomer(Customer $customer): int
+    {
+        return $customer->paymentNotices()
+            ->whereIn('status', ['pending', 'overdue'])
+            ->delete();
+    }
+
+    /**
+     * Clear notices older than a specific date.
+     */
+    public function clearNoticesOlderThan(Carbon $date, array $statuses = ['pending', 'overdue']): int
+    {
+        return PaymentNotice::where('due_date', '<', $date)
+            ->whereIn('status', $statuses)
+            ->delete();
+    }
+
+    /**
      * Get dashboard statistics.
      */
     public function getDashboardStats(): array
