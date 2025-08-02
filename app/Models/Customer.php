@@ -268,7 +268,8 @@ class Customer extends Model
             return '0';
         } elseif ($unpaidMonths < 0) {
             $advanceMonths = abs($unpaidMonths);
-            return $advanceMonths . ' over';
+            $monthText = $advanceMonths == 1 ? 'month' : 'months';
+            return $advanceMonths . ' ' . $monthText . ' over';
         } else {
             return (string) $unpaidMonths;
         }

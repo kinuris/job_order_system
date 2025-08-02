@@ -261,47 +261,54 @@
                                 </span>
                             </div>
 
-                            {{-- Payment Details Grid --}}
-                            <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
-                                <div>
+                            {{-- Payment Details Grid - More Compact Layout --}}
+                            <div class="grid grid-cols-1 gap-2 mb-3 text-xs">
+                                <div class="flex justify-between items-center">
                                     <span class="text-gray-500 dark:text-gray-400">Plan:</span>
                                     <div class="font-medium text-gray-900 dark:text-gray-100">{{ $notice->plan->name }}</div>
                                 </div>
-                                <div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-500 dark:text-gray-400">Status:</span>
+                                    <div class="font-medium">
+                                        @php
+                                            $unpaidDisplay = $customerUnpaidCounts[$notice->customer_id] ?? '0';
+                                        @endphp
+                                        @if(str_contains($unpaidDisplay, 'over'))
+                                            <span class="text-green-600 dark:text-green-400 font-semibold">{{ $unpaidDisplay }}</span>
+                                        @elseif($unpaidDisplay === '0')
+                                            <span class="text-blue-600 dark:text-blue-400 font-semibold">Current</span>
+                                        @else
+                                            <span class="text-red-600 dark:text-red-400 font-semibold">
+                                                {{ $unpaidDisplay }} {{ (int)$unpaidDisplay === 1 ? 'month behind' : 'months behind' }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if($notice->due_date)
+                                <div class="flex justify-between items-center">
                                     <span class="text-gray-500 dark:text-gray-400">Due Date:</span>
                                     <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        @if($notice->due_date)
-                                            {{ $notice->due_date->format('M j, Y') }}
-                                            @if($notice->days_overdue > 0)
-                                                <span class="text-red-600 dark:text-red-400">({{ $notice->days_overdue }}d overdue)</span>
-                                            @endif
-                                        @else
-                                            <span class="text-gray-500 dark:text-gray-400">No pending due date</span>
+                                        {{ $notice->due_date->format('M j, Y') }}
+                                        @if($notice->days_overdue > 0)
+                                            <span class="text-red-600 dark:text-red-400 text-xs">({{ $notice->days_overdue }}d overdue)</span>
                                         @endif
                                     </div>
                                 </div>
-                                <div>
-                                    <span class="text-gray-500 dark:text-gray-400">Latest Paid Date:</span>
+                                @endif
+
+                                @php
+                                    $latestPaymentDate = $notice->customer->getLatestPaymentDate();
+                                @endphp
+                                @if($latestPaymentDate)
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-500 dark:text-gray-400">Last Payment:</span>
                                     <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        @php
-                                            $latestPaymentDate = $notice->customer->getLatestPaymentDate();
-                                        @endphp
-                                        @if($latestPaymentDate)
-                                            {{ $latestPaymentDate->format('M j, Y') }}
-                                        @else
-                                            <span class="text-gray-500 dark:text-gray-400">No payments</span>
-                                        @endif
+                                        {{ $latestPaymentDate->format('M j, Y') }}
                                     </div>
                                 </div>
-                                <div>
-                                    <span class="text-gray-500 dark:text-gray-400">Unpaid Months:</span>
-                                    <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $customerUnpaidCounts[$notice->customer_id] ?? '0' }}
-                                        @if(!str_contains($customerUnpaidCounts[$notice->customer_id] ?? '0', 'over'))
-                                            {{ (int)($customerUnpaidCounts[$notice->customer_id] ?? 0) === 1 ? 'month' : 'months' }}
-                                        @endif
-                                    </div>
-                                </div>
+                                @endif
                             </div>
 
                             {{-- Action Buttons --}}
@@ -463,12 +470,27 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ $customerUnpaidCounts[$notice->customer_id] ?? '0' }}
-                                            @if(!str_contains($customerUnpaidCounts[$notice->customer_id] ?? '0', 'over'))
-                                                <span class="text-xs text-gray-500 dark:text-gray-400">
-                                                    {{ (int)($customerUnpaidCounts[$notice->customer_id] ?? 0) === 1 ? 'month' : 'months' }}
-                                                </span>
+                                        @php
+                                            $unpaidDisplay = $customerUnpaidCounts[$notice->customer_id] ?? '0';
+                                        @endphp
+                                        <div class="text-sm font-medium">
+                                            @if(str_contains($unpaidDisplay, 'over'))
+                                                <div class="text-green-600 dark:text-green-400">
+                                                    <div class="font-semibold">{{ $unpaidDisplay }}</div>
+                                                    <div class="text-xs text-green-500 dark:text-green-300">Advance Payment</div>
+                                                </div>
+                                            @elseif($unpaidDisplay === '0')
+                                                <div class="text-blue-600 dark:text-blue-400">
+                                                    <div class="font-semibold">Current</div>
+                                                    <div class="text-xs text-blue-500 dark:text-blue-300">Up to date</div>
+                                                </div>
+                                            @else
+                                                <div class="text-red-600 dark:text-red-400">
+                                                    <div class="font-semibold">{{ $unpaidDisplay }}</div>
+                                                    <div class="text-xs text-red-500 dark:text-red-300">
+                                                        {{ (int)$unpaidDisplay === 1 ? 'month behind' : 'months behind' }}
+                                                    </div>
+                                                </div>
                                             @endif
                                         </div>
                                     </td>
