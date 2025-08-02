@@ -527,19 +527,57 @@ class PaymentService
 
     /**
      * Get payment notices with sorting and additional metadata.
+     * Now includes ALL customers and uses display-friendly unpaid months.
      */
     public function getPaymentNoticesWithMetadata(array $options = []): array
     {
-        $notices = $this->getPaymentNoticesWithSorting($options);
+        // First, get all customers (not just those with notices)
+        $allCustomers = Customer::with(['plan', 'paymentNotices', 'payments'])
+            ->whereNotNull('plan_installed_at')
+            ->where('plan_status', 'active')
+            ->whereHas('plan')
+            ->get();
 
-        // Calculate unpaid counts for each customer
+        // Create payment notices for all customers (even if they don't have actual notices)
+        $noticesCollection = collect();
         $customerUnpaidCounts = [];
-        foreach ($notices as $notice) {
-            $customerId = $notice->customer_id;
-            if (!isset($customerUnpaidCounts[$customerId])) {
-                $customerUnpaidCounts[$customerId] = $notice->customer->getUnpaidMonths();
+
+        foreach ($allCustomers as $customer) {
+            // Get actual payment notices for this customer
+            $actualNotices = $customer->paymentNotices()
+                ->whereIn('status', ['pending', 'overdue'])
+                ->get();
+
+            if ($actualNotices->isNotEmpty()) {
+                // Add actual notices to collection
+                foreach ($actualNotices as $notice) {
+                    $noticesCollection->push($notice);
+                }
+            } else {
+                // Create a virtual notice entry for customers without actual notices
+                $virtualNotice = new \stdClass();
+                $virtualNotice->id = null;
+                $virtualNotice->customer_id = $customer->id;
+                $virtualNotice->customer = $customer;
+                $virtualNotice->plan = $customer->plan;
+                $virtualNotice->due_date = null;
+                $virtualNotice->amount_due = 0;
+                $virtualNotice->status = 'current';
+                $virtualNotice->period_from = null;
+                $virtualNotice->period_to = null;
+                $virtualNotice->created_at = null;
+                $virtualNotice->updated_at = null;
+                $virtualNotice->days_overdue = 0;
+                
+                $noticesCollection->push($virtualNotice);
             }
+
+            // Store the display-friendly unpaid months count
+            $customerUnpaidCounts[$customer->id] = $customer->getUnpaidMonthsDisplay();
         }
+
+        // Apply filters to the collection
+        $notices = $this->applyFiltersToNoticesCollection($noticesCollection, $options);
 
         return [
             'notices' => $notices,
@@ -548,7 +586,71 @@ class PaymentService
     }
 
     /**
+     * Apply filters to the notices collection.
+     */
+    protected function applyFiltersToNoticesCollection($notices, array $options = [])
+    {
+        $sortBy = $options['sort_by'] ?? 'customer_name';
+        $sortDirection = $options['sort_direction'] ?? 'asc';
+        $status = $options['status'] ?? null;
+        $customerSearch = $options['customer_search'] ?? null;
+        $overdueOnly = $options['overdue_only'] ?? false;
+
+        // Apply status filter
+        if ($status && is_array($status) && !empty($status)) {
+            $notices = $notices->filter(function ($notice) use ($status) {
+                return in_array($notice->status ?? 'current', $status);
+            });
+        } elseif ($status) {
+            $notices = $notices->filter(function ($notice) use ($status) {
+                return ($notice->status ?? 'current') === $status;
+            });
+        }
+
+        // Apply overdue filter
+        if ($overdueOnly) {
+            $notices = $notices->filter(function ($notice) {
+                return $notice->due_date && $notice->due_date < now();
+            });
+        }
+
+        // Apply customer search filter
+        if ($customerSearch) {
+            $notices = $notices->filter(function ($notice) use ($customerSearch) {
+                $customer = $notice->customer;
+                $fullName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+                return stripos($fullName, $customerSearch) !== false ||
+                       stripos($customer->email ?? '', $customerSearch) !== false ||
+                       stripos($customer->phone_number ?? '', $customerSearch) !== false;
+            });
+        }
+
+        // Sort the collection
+        if ($sortBy === 'customer_name' || $sortBy === 'name') {
+            $notices = $notices->sortBy(function ($notice) {
+                $customer = $notice->customer;
+                return strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')));
+            }, SORT_REGULAR, $sortDirection === 'desc');
+        } elseif ($sortBy === 'unpaid_months') {
+            $notices = $notices->sortBy(function ($notice) {
+                return $notice->customer->getUnpaidMonthsForDisplay();
+            }, SORT_NUMERIC, $sortDirection === 'desc');
+        } elseif ($sortBy === 'due_date') {
+            $notices = $notices->sortBy(function ($notice) {
+                return $notice->due_date ?? '9999-12-31'; // Put nulls at the end
+            }, SORT_REGULAR, $sortDirection === 'desc');
+        } elseif ($sortBy === 'amount') {
+            $notices = $notices->sortBy(function ($notice) {
+                return $notice->amount_due ?? 0;
+            }, SORT_NUMERIC, $sortDirection === 'desc');
+        }
+
+        return $notices;
+    }
+
+    /**
      * Get customers with payment notices, sorted by name or unpaid months.
+     * Now includes ALL customers regardless of payment status.
      */
     public function getCustomersWithNoticesSorted(array $options = []): \Illuminate\Database\Eloquent\Collection
     {
@@ -556,17 +658,16 @@ class PaymentService
         $sortDirection = $options['sort_direction'] ?? 'asc';
         $hasUnpaidOnly = $options['has_unpaid_only'] ?? false;
 
-        $customers = Customer::with(['plan', 'paymentNotices' => function ($query) {
-                $query->whereIn('status', ['pending', 'overdue']);
-            }])
+        $customers = Customer::with(['plan', 'paymentNotices', 'payments'])
             ->whereNotNull('plan_installed_at')
+            ->where('plan_status', 'active')
             ->whereHas('plan')
             ->get();
 
-        // Filter customers with unpaid notices only if requested
+        // Filter customers with unpaid notices only if specifically requested (for backwards compatibility)
         if ($hasUnpaidOnly) {
             $customers = $customers->filter(function ($customer) {
-                return $customer->paymentNotices->isNotEmpty();
+                return $customer->getUnpaidMonths() > 0;
             });
         }
 
@@ -586,6 +687,7 @@ class PaymentService
 
     /**
      * Get payment notices summary with sorting and grouping options.
+     * Now includes ALL customers regardless of payment status.
      */
     public function getPaymentNoticesSummary(array $options = []): array
     {
@@ -594,10 +696,11 @@ class PaymentService
         $groupBy = $options['group_by'] ?? null; // 'status', 'overdue_range', null
         $statusFilter = $options['status_filter'] ?? null;
 
+        // Get ALL customers, not just those with unpaid notices
         $customers = $this->getCustomersWithNoticesSorted([
             'sort_by' => $sortBy,
             'sort_direction' => $sortDirection,
-            'has_unpaid_only' => true
+            'has_unpaid_only' => false // Include all customers
         ]);
 
         $summary = [
@@ -608,35 +711,38 @@ class PaymentService
         ];
 
         foreach ($customers as $customer) {
-            $unpaidNotices = $customer->paymentNotices;
+            $unpaidNotices = $customer->paymentNotices->whereIn('status', ['pending', 'overdue']);
             
             if ($statusFilter) {
                 $unpaidNotices = $unpaidNotices->where('status', $statusFilter);
             }
 
-            if ($unpaidNotices->isNotEmpty()) {
-                $customerData = [
-                    'id' => $customer->id,
-                    'name' => $customer->full_name,
-                    'unpaid_months' => $customer->getUnpaidMonths(),
-                    'notices_count' => $unpaidNotices->count(),
-                    'total_amount' => $unpaidNotices->sum('amount_due'),
-                    'oldest_notice_date' => $unpaidNotices->min('due_date'),
-                    'notices' => $unpaidNotices->map(function ($notice) {
-                        return [
-                            'id' => $notice->id,
-                            'due_date' => $notice->due_date,
-                            'amount_due' => $notice->amount_due,
-                            'status' => $notice->status,
-                            'days_overdue' => $notice->days_overdue ?? 0
-                        ];
-                    })
-                ];
+            $unpaidMonths = $customer->getUnpaidMonths();
+            
+            // Include ALL customers in the summary
+            $customerData = [
+                'id' => $customer->id,
+                'name' => $customer->full_name,
+                'unpaid_months' => $unpaidMonths,
+                'notices_count' => $unpaidNotices->count(),
+                'total_amount' => $unpaidNotices->sum('amount_due'),
+                'oldest_notice_date' => $unpaidNotices->min('due_date'),
+                'payment_status' => $this->getPaymentStatus($customer),
+                'latest_payment_date' => $customer->getLatestPaymentDate(),
+                'notices' => $unpaidNotices->map(function ($notice) {
+                    return [
+                        'id' => $notice->id,
+                        'due_date' => $notice->due_date,
+                        'amount_due' => $notice->amount_due,
+                        'status' => $notice->status,
+                        'days_overdue' => $notice->days_overdue ?? 0
+                    ];
+                })
+            ];
 
-                $summary['customers'][] = $customerData;
-                $summary['total_notices'] += $unpaidNotices->count();
-                $summary['total_amount'] += $unpaidNotices->sum('amount_due');
-            }
+            $summary['customers'][] = $customerData;
+            $summary['total_notices'] += $unpaidNotices->count();
+            $summary['total_amount'] += $unpaidNotices->sum('amount_due');
         }
 
         // Apply grouping if requested

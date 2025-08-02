@@ -270,9 +270,13 @@
                                 <div>
                                     <span class="text-gray-500 dark:text-gray-400">Due Date:</span>
                                     <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $notice->due_date->format('M j, Y') }}
-                                        @if($notice->days_overdue > 0)
-                                            <span class="text-red-600 dark:text-red-400">({{ $notice->days_overdue }}d overdue)</span>
+                                        @if($notice->due_date)
+                                            {{ $notice->due_date->format('M j, Y') }}
+                                            @if($notice->days_overdue > 0)
+                                                <span class="text-red-600 dark:text-red-400">({{ $notice->days_overdue }}d overdue)</span>
+                                            @endif
+                                        @else
+                                            <span class="text-gray-500 dark:text-gray-400">No pending due date</span>
                                         @endif
                                     </div>
                                 </div>
@@ -292,7 +296,10 @@
                                 <div>
                                     <span class="text-gray-500 dark:text-gray-400">Unpaid Months:</span>
                                     <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $customerUnpaidCounts[$notice->customer_id] ?? 0 }} months
+                                        {{ $customerUnpaidCounts[$notice->customer_id] ?? '0' }}
+                                        @if(!str_contains($customerUnpaidCounts[$notice->customer_id] ?? '0', 'over'))
+                                            {{ (int)($customerUnpaidCounts[$notice->customer_id] ?? 0) === 1 ? 'month' : 'months' }}
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -307,15 +314,13 @@
                                     </svg>
                                     View History
                                 </a>
-                                @if(($customerUnpaidCounts[$notice->customer_id] ?? 0) > 0)
-                                    <a href="{{ route('admin.payments.create', ['customer_id' => $notice->customer->id]) }}" 
-                                       class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-medium text-xs text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                                        <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                        </svg>
-                                        Record Payment
-                                    </a>
-                                @endif
+                                <a href="{{ route('admin.payments.create', ['customer_id' => $notice->customer->id]) }}" 
+                                   class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-medium text-xs text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Record Payment
+                                </a>
                             </div>
                         </div>
                     @endforeach
@@ -445,9 +450,13 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ $notice->due_date->format('M j, Y') }}
+                                            @if($notice->due_date)
+                                                {{ $notice->due_date->format('M j, Y') }}
+                                            @else
+                                                <span class="text-gray-500 dark:text-gray-400">No pending due date</span>
+                                            @endif
                                         </div>
-                                        @if($notice->days_overdue > 0)
+                                        @if($notice->due_date && $notice->days_overdue > 0)
                                             <div class="text-xs text-red-600 dark:text-red-400">
                                                 {{ $notice->days_overdue }} days overdue
                                             </div>
@@ -455,8 +464,12 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ $customerUnpaidCounts[$notice->customer_id] ?? 0 }} 
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">months</span>
+                                            {{ $customerUnpaidCounts[$notice->customer_id] ?? '0' }}
+                                            @if(!str_contains($customerUnpaidCounts[$notice->customer_id] ?? '0', 'over'))
+                                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ (int)($customerUnpaidCounts[$notice->customer_id] ?? 0) === 1 ? 'month' : 'months' }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -489,12 +502,10 @@
                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
                                                 View
                                             </a>
-                                            @if(($customerUnpaidCounts[$notice->customer_id] ?? 0) > 0)
-                                                <a href="{{ route('admin.payments.create', ['customer_id' => $notice->customer->id]) }}" 
-                                                   class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                                                    Record Payment
-                                                </a>
-                                            @endif
+                                            <a href="{{ route('admin.payments.create', ['customer_id' => $notice->customer->id]) }}" 
+                                               class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
+                                                Record Payment
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
