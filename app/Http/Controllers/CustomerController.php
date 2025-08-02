@@ -71,14 +71,20 @@ class CustomerController extends Controller
         }
 
         // Sorting
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
+        $sortBy = $request->get('sort_by', 'name');
+        $sortDirection = $request->get('sort_direction', 'asc');
         
-        $allowedSortFields = ['first_name', 'last_name', 'email', 'created_at', 'plan_installed_at'];
+        $allowedSortFields = ['first_name', 'last_name', 'email', 'created_at', 'plan_installed_at', 'name'];
         if (in_array($sortBy, $allowedSortFields)) {
-            $query->orderBy($sortBy, $sortDirection);
+            if ($sortBy === 'name') {
+                // Sort by full name (first_name + last_name)
+                $query->orderByRaw("CONCAT(first_name, ' ', last_name) {$sortDirection}");
+            } else {
+                $query->orderBy($sortBy, $sortDirection);
+            }
         } else {
-            $query->orderBy('created_at', 'desc');
+            // Default sorting by name
+            $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC");
         }
         
         $customers = $query->paginate(15)->withQueryString();

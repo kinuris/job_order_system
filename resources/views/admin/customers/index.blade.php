@@ -126,13 +126,14 @@
                             <select name="sort_by" id="sort_by" 
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                                     onchange="this.form.submit()">
-                                <option value="created_at" {{ request('sort_by', 'created_at') === 'created_at' ? 'selected' : '' }}>Date Added</option>
+                                <option value="name" {{ request('sort_by', 'name') === 'name' ? 'selected' : '' }}>Full Name</option>
                                 <option value="first_name" {{ request('sort_by') === 'first_name' ? 'selected' : '' }}>First Name</option>
                                 <option value="last_name" {{ request('sort_by') === 'last_name' ? 'selected' : '' }}>Last Name</option>
                                 <option value="email" {{ request('sort_by') === 'email' ? 'selected' : '' }}>Email</option>
                                 <option value="plan_installed_at" {{ request('sort_by') === 'plan_installed_at' ? 'selected' : '' }}>Installation Date</option>
+                                <option value="created_at" {{ request('sort_by') === 'created_at' ? 'selected' : '' }}>Date Added</option>
                             </select>
-                            <input type="hidden" name="sort_direction" value="{{ request('sort_direction', 'desc') }}">
+                            <input type="hidden" name="sort_direction" value="{{ request('sort_direction', request('sort_by', 'name') === 'name' ? 'asc' : 'desc') }}">
                         </div>
 
                         {{-- Date Range Filters --}}
